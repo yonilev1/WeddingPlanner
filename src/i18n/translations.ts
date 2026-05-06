@@ -142,6 +142,9 @@ const t = {
       inProgress: 'In Progress',
       done: 'Done',
       updated: 'Updated',
+      deleteTask: 'Delete task',
+      confirmDelete: 'Confirm delete',
+      cancel: 'Cancel',
     },
     settings: {
       title: 'Wedding Settings',
@@ -158,6 +161,19 @@ const t = {
     common: {
       loading: 'Loading…',
       language: 'Language',
+    },
+    budget: {
+      title: 'Budget Tracker',
+      subtitle: 'Estimated vs. actual costs',
+      estimated: 'Estimated',
+      spent: 'Spent',
+      remaining: 'Remaining',
+      over: 'Over Budget',
+      ofBudgetUsed: '% of budget used',
+      byCategory: 'By Category',
+      allLineItems: 'All Line Items',
+      noCosts: 'No costs tracked yet.',
+      noCostsHint: 'Open any task and add an estimated or actual cost to track your budget.',
     },
     categoryNames: {
       'Venue & Logistics': 'Venue & Logistics',
@@ -311,6 +327,9 @@ const t = {
       inProgress: 'En cours',
       done: 'Terminé',
       updated: 'Mis à jour',
+      deleteTask: 'Supprimer la tâche',
+      confirmDelete: 'Confirmer la suppression',
+      cancel: 'Annuler',
     },
     settings: {
       title: 'Paramètres du Mariage',
@@ -327,6 +346,19 @@ const t = {
     common: {
       loading: 'Chargement…',
       language: 'Langue',
+    },
+    budget: {
+      title: 'Suivi du Budget',
+      subtitle: 'Coûts estimés vs réels',
+      estimated: 'Estimé',
+      spent: 'Dépensé',
+      remaining: 'Restant',
+      over: 'Dépassement',
+      ofBudgetUsed: '% du budget utilisé',
+      byCategory: 'Par Catégorie',
+      allLineItems: 'Tous les Postes',
+      noCosts: 'Aucun coût enregistré.',
+      noCostsHint: 'Ouvrez une tâche et ajoutez un coût estimé ou réel pour suivre votre budget.',
     },
     categoryNames: {
       'Venue & Logistics': 'Lieu & Logistique',
@@ -480,6 +512,9 @@ const t = {
       inProgress: 'בתהליך',
       done: 'הושלם',
       updated: 'עודכן',
+      deleteTask: 'מחק משימה',
+      confirmDelete: 'אשר מחיקה',
+      cancel: 'ביטול',
     },
     settings: {
       title: 'הגדרות חתונה',
@@ -496,6 +531,19 @@ const t = {
     common: {
       loading: 'טוען…',
       language: 'שפה',
+    },
+    budget: {
+      title: 'מעקב תקציב',
+      subtitle: 'עלויות משוערות מול בפועל',
+      estimated: 'משוער',
+      spent: 'הוצא',
+      remaining: 'נותר',
+      over: 'חריגה מתקציב',
+      ofBudgetUsed: '% מהתקציב נוצל',
+      byCategory: 'לפי קטגוריה',
+      allLineItems: 'כל הסעיפים',
+      noCosts: 'אין עלויות עדיין.',
+      noCostsHint: 'פתח משימה והוסף עלות משוערת או בפועל כדי לעקוב אחר התקציב.',
     },
     categoryNames: {
       'Venue & Logistics': 'אולם ולוגיסטיקה',

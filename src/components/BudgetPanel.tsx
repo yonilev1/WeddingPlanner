@@ -1,5 +1,6 @@
 import type { TaskWithSubtasks } from '../types/database'
 import { useUIStore } from '../store/uiStore'
+import { useTranslation } from '../i18n/useTranslation'
 
 interface Props {
   categories: TaskWithSubtasks[]
@@ -12,6 +13,9 @@ function fmt(n: number) {
 
 export function BudgetPanel({ categories, onClose }: Props) {
   const { openDrawer } = useUIStore()
+  const tr = useTranslation()
+  const b = tr.budget
+  const catName = (title: string) => (tr.categoryNames as Record<string, string>)[title] ?? title
 
   type CategoryBudget = {
     id: string
@@ -47,8 +51,8 @@ export function BudgetPanel({ categories, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
           <div>
-            <h2 className="font-semibold text-stone-800">Budget Tracker</h2>
-            <p className="text-xs text-stone-400 mt-0.5">Estimated vs. actual costs</p>
+            <h2 className="font-semibold text-stone-800">{b.title}</h2>
+            <p className="text-xs text-stone-400 mt-0.5">{b.subtitle}</p>
           </div>
           <button
             onClick={onClose}
@@ -64,16 +68,16 @@ export function BudgetPanel({ categories, onClose }: Props) {
           {/* Summary cards */}
           <div className="p-4 grid grid-cols-3 gap-3">
             <div className="bg-stone-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-stone-400 mb-1">Estimated</p>
+              <p className="text-xs text-stone-400 mb-1">{b.estimated}</p>
               <p className="text-lg font-bold text-stone-800">{fmt(totalEstimated)}</p>
             </div>
             <div className="bg-stone-50 rounded-xl p-3 text-center">
-              <p className="text-xs text-stone-400 mb-1">Spent</p>
+              <p className="text-xs text-stone-400 mb-1">{b.spent}</p>
               <p className="text-lg font-bold text-stone-800">{fmt(totalActual)}</p>
             </div>
             <div className={`rounded-xl p-3 text-center ${overBudget ? 'bg-rose-50' : 'bg-emerald-50'}`}>
               <p className={`text-xs mb-1 ${overBudget ? 'text-rose-400' : 'text-emerald-500'}`}>
-                {overBudget ? 'Over' : 'Remaining'}
+                {overBudget ? b.over : b.remaining}
               </p>
               <p className={`text-lg font-bold ${overBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
                 {fmt(Math.abs(remaining))}
@@ -91,7 +95,7 @@ export function BudgetPanel({ categories, onClose }: Props) {
                 />
               </div>
               <p className="text-xs text-stone-400 mt-1 text-right">
-                {Math.round((totalActual / totalEstimated) * 100)}% of budget used
+                {Math.round((totalActual / totalEstimated) * 100)}{b.ofBudgetUsed}
               </p>
             </div>
           )}
@@ -99,7 +103,7 @@ export function BudgetPanel({ categories, onClose }: Props) {
           {/* By category */}
           {categoryBudgets.length > 0 && (
             <div className="px-4 pb-4">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">By Category</p>
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">{b.byCategory}</p>
               <div className="space-y-2">
                 {categoryBudgets.map((cat) => {
                   const pct = cat.estimated > 0 ? Math.min((cat.actual / cat.estimated) * 100, 100) : 0
@@ -111,7 +115,7 @@ export function BudgetPanel({ categories, onClose }: Props) {
                           onClick={() => { openDrawer(cat.id); onClose() }}
                           className="text-sm font-medium text-stone-700 hover:text-rose-600 transition-colors text-left truncate"
                         >
-                          {cat.title}
+                          {catName(cat.title)}
                         </button>
                         <span className={`text-xs font-medium flex-shrink-0 ml-2 ${over ? 'text-rose-500' : 'text-stone-500'}`}>
                           {fmt(cat.actual)} / {fmt(cat.estimated)}
@@ -135,7 +139,7 @@ export function BudgetPanel({ categories, onClose }: Props) {
           {/* All tasks with costs */}
           {allTasksWithCost.length > 0 && (
             <div className="px-4 pb-6">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">All Line Items</p>
+              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">{b.allLineItems}</p>
               <div className="space-y-1">
                 {allTasksWithCost.map((t) => (
                   <button
@@ -165,10 +169,8 @@ export function BudgetPanel({ categories, onClose }: Props) {
           {allTasksWithCost.length === 0 && (
             <div className="px-4 pb-6 text-center py-12">
               <p className="text-3xl mb-3">💰</p>
-              <p className="text-stone-500 text-sm">No costs tracked yet.</p>
-              <p className="text-stone-400 text-xs mt-1">
-                Open any task and add an estimated or actual cost to track your budget.
-              </p>
+              <p className="text-stone-500 text-sm">{b.noCosts}</p>
+              <p className="text-stone-400 text-xs mt-1">{b.noCostsHint}</p>
             </div>
           )}
         </div>

@@ -125,7 +125,7 @@ function SortableSubtaskRow({
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation()
     const next = task.status === 'done' ? 'todo' : 'done'
-    updateTask.mutate({ id: task.id, wedding_id: task.wedding_id, status: next })
+    updateTask.mutate({ id: task.id, wedding_id: task.wedding_id, status: next, _prevTask: task })
     if (next === 'done') toast.success(`"${task.title}" ${tr.board.markedComplete}`)
   }
 
@@ -741,7 +741,7 @@ export function TaskBoardScreen({ wedding }: Props) {
           {/* Mobile sidebar backdrop */}
           {sidebarOpen && (
             <div
-              className="fixed inset-0 bg-stone-900/30 z-20 md:hidden"
+              className="fixed inset-0 bg-stone-900/40 z-20 md:hidden"
               onClick={() => setSidebarOpen(false)}
             />
           )}
@@ -749,12 +749,12 @@ export function TaskBoardScreen({ wedding }: Props) {
           {/* ── Sidebar ──────────────────────────────────────────────────── */}
           <aside
             className={`
-              fixed md:static inset-y-0 left-0 z-30
-              w-64 flex-shrink-0 border-r border-stone-200 dark:border-stone-700
-              bg-stone-50/80 dark:bg-stone-900/90
+              fixed md:static inset-y-0 start-0 z-30
+              w-72 flex-shrink-0 border-e border-stone-200 dark:border-stone-700
+              bg-white dark:bg-stone-900
               flex flex-col overflow-hidden
               transition-transform duration-200
-              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+              ${sidebarOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full md:translate-x-0'}
             `}
           >
             <div className="flex items-center justify-between px-3 pt-3 pb-1 flex-shrink-0">
@@ -834,11 +834,11 @@ export function TaskBoardScreen({ wedding }: Props) {
             {/* Toolbar */}
             <div className="flex-shrink-0 px-4 sm:px-6 pt-5 pb-4 space-y-3">
               <div className="flex items-center gap-3">
-                {/* Mobile hamburger */}
+                {/* Mobile hamburger — shows at start (left in LTR, right in RTL) */}
                 <button
-                  className="md:hidden p-2 -ml-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors"
+                  className="md:hidden p-2 -ms-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors"
                   onClick={() => setSidebarOpen(true)}
-                  title="Open categories"
+                  title={tr.board.categories}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />

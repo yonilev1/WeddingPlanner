@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Task, TaskStatus } from '../types/database'
-import { useUpdateTask } from '../hooks/useTasks'
+import { useUpdateTask, useDeleteTask } from '../hooks/useTasks'
 import { useComments, useAddComment, useActivity } from '../hooks/useComments'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
@@ -57,6 +57,7 @@ function actionSummary(action: string, oldVal: string | null, newVal: string | n
 export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   const { closeDrawer } = useUIStore()
   const updateTask = useUpdateTask()
+  const deleteTask = useDeleteTask()
   const qc = useQueryClient()
   const tr = useTranslation()
   const d = tr.drawer
@@ -80,6 +81,7 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   const [localDesc, setLocalDesc] = useState(task?.description ?? '')
   const [newComment, setNewComment] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const { data: comments } = useComments(taskId)
   const { data: activity } = useActivity(taskId)
@@ -111,7 +113,11 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   if (!task) return null
 
   const push = (changes: Partial<Task>) =>
-    updateTask.mutate({ id: task.id, wedding_id: weddingId, ...changes })
+    updateTask.mutate({ id: task.id, wedding_id: weddingId, _prevTask: task, ...changes })
+
+  const handleDelete = () => {
+    deleteTask.mutate({ id: task.id, weddingId }, { onSuccess: closeDrawer })
+  }
 
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,7 +141,7 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
         <div className="flex items-start gap-3 px-5 py-4 border-b border-stone-200">
           <div className="flex-1 min-w-0">
             <input
-              className="w-full text-lg font-semibold text-stone-800 bg-transparent border-0 outline-none focus:bg-stone-50 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors"
+              className="w-full text-lg font-semibold text-stone-800 bg-transparent border border-transparent hover:border-stone-200 focus:border-rose-300 focus:bg-stone-50 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors outline-none focus:ring-2 focus:ring-rose-200"
               value={localTitle}
               onChange={(e) => setLocalTitle(e.target.value)}
               onBlur={() => localTitle.trim() && push({ title: localTitle.trim() })}
@@ -154,14 +160,43 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
               </span>
             </div>
           </div>
-          <button
-            onClick={closeDrawer}
-            className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors flex-shrink-0 mt-1"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0 mt-1">
+            {confirmingDelete ? (
+              <>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteTask.isPending}
+                  className="px-3 py-1.5 text-xs font-medium bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors"
+                >
+                  {deleteTask.isPending ? '…' : d.confirmDelete ?? 'Delete'}
+                </button>
+                <button
+                  onClick={() => setConfirmingDelete(false)}
+                  className="px-3 py-1.5 text-xs font-medium text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+                >
+                  {d.cancel ?? 'Cancel'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setConfirmingDelete(true)}
+                className="p-1.5 text-stone-300 hover:text-rose-400 hover:bg-rose-50 rounded-lg transition-colors"
+                title={d.deleteTask ?? 'Delete task'}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={closeDrawer}
+              className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}

@@ -1,8 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import type { Task, TaskWithSubtasks } from '../types/database'
+import type { Task, TaskWithSubtasks, TaskActivityAction } from '../types/database'
 import { arrayMove } from '@dnd-kit/sortable'
 export { arrayMove }
+
+async function logActivity(
+  taskId: string,
+  userId: string,
+  action: TaskActivityAction,
+  oldVal: string | null,
+  newVal: string | null,
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from('task_activity') as any).insert({
+    task_id: taskId,
+    user_id: userId,
+    action,
+    old_value: oldVal,
+    new_value: newVal,
+  })
+}
 
 export function useAddTask() {
   const qc = useQueryClient()
@@ -75,17 +92,39 @@ export function useUpdateTask() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, wedding_id: _wid, ...updates }: Partial<Task> & { id: string; wedding_id: string }) => {
-      // Cast to any — Supabase JS v2 / TypeScript 6 type-level incompatibility
+    mutationFn: async ({
+      id,
+      wedding_id: _wid,
+      _prevTask,
+      ...updates
+    }: Partial<Task> & { id: string; wedding_id: string; _prevTask?: Task }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const builder = (supabase.from('tasks') as any)
-      const { data, error } = await builder
+      const { data, error } = await (supabase.from('tasks') as any)
         .update(updates)
         .eq('id', id)
         .select()
         .single()
       if (error) throw error
-      return data
+      return { data, prevTask: _prevTask, updates }
+    },
+    onSuccess: async ({ data, prevTask, updates }) => {
+      if (!prevTask) return
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData.user?.id
+      if (!userId) return
+      const logs: Promise<void>[] = []
+      if (updates.status !== undefined && updates.status !== prevTask.status)
+        logs.push(logActivity(data.id, userId, 'status_changed', prevTask.status, updates.status))
+      if (updates.priority !== undefined && updates.priority !== prevTask.priority)
+        logs.push(logActivity(data.id, userId, 'priority_changed', String(prevTask.priority), String(updates.priority)))
+      if (updates.title !== undefined && updates.title !== prevTask.title)
+        logs.push(logActivity(data.id, userId, 'title_changed', prevTask.title, updates.title))
+      if (updates.description !== undefined && updates.description !== prevTask.description)
+        logs.push(logActivity(data.id, userId, 'description_changed', null, null))
+      if (updates.due_date !== undefined && updates.due_date !== prevTask.due_date)
+        logs.push(logActivity(data.id, userId, 'due_date_changed', prevTask.due_date ?? null, updates.due_date ?? null))
+      await Promise.all(logs)
+      if (logs.length > 0) qc.invalidateQueries({ queryKey: ['activity', data.id] })
     },
     onMutate: async ({ id, wedding_id, ...updates }) => {
       await qc.cancelQueries({ queryKey: ['tasks', wedding_id] })
@@ -100,6 +139,21 @@ export function useUpdateTask() {
     },
     onSettled: (_d, _e, vars) => {
       qc.invalidateQueries({ queryKey: ['tasks', vars.wedding_id] })
+    },
+  })
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, weddingId }: { id: string; weddingId: string }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('tasks') as any).delete().eq('id', id)
+      if (error) throw error
+      return { id, weddingId }
+    },
+    onSuccess: (_d, { weddingId }) => {
+      qc.invalidateQueries({ queryKey: ['tasks', weddingId] })
     },
   })
 }
