@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { height: 100%; }
+  body {
+    height: 100%;
+    @apply bg-stone-50 text-stone-800 antialiased;
+  }
+  html.dark body {
+    @apply bg-stone-950 text-stone-100;
+  }
+  #root { height: 100%; }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.stone.300') transparent;
+  }
+}
+
+/* ── Print styles ─────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide everything except the print content panel */
+  body > #root > * {
+    display: none !important;
+  }
+
+  /* Show only our print panel */
+  #print-content {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+
+  /* Force white background */
+  body, html {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Page breaks */
+  .break-inside-avoid-page {
+    break-inside: avoid;
+  }
+
+  /* Hide nav-bar controls when printing */
+  .print\:hidden {
+    display: none !important;
+  }
+}
