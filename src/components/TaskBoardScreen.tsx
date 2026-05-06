@@ -484,11 +484,11 @@ function FilterBar() {
         className={inputCls}
       >
         <option value="all">{tr.board.anyPriority}</option>
-        <option value="5">P5 — Critical</option>
-        <option value="4">P4 — High</option>
-        <option value="3">P3 — Medium</option>
-        <option value="2">P2 — Low</option>
-        <option value="1">P1 — Very Low</option>
+        <option value="5">{tr.drawer.p5Label}</option>
+        <option value="4">{tr.drawer.p4Label}</option>
+        <option value="3">{tr.drawer.p3Label}</option>
+        <option value="2">{tr.drawer.p2Label}</option>
+        <option value="1">{tr.drawer.p1Label}</option>
       </select>
 
       {/* Date range toggle */}
@@ -754,7 +754,7 @@ export function TaskBoardScreen({ wedding }: Props) {
               bg-white dark:bg-stone-900
               flex flex-col overflow-hidden
               transition-transform duration-200
-              ${sidebarOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full md:translate-x-0'}
+              ${sidebarOpen ? 'translate-x-0' : 'max-md:ltr:-translate-x-full max-md:rtl:translate-x-full'}
             `}
           >
             <div className="flex items-center justify-between px-3 pt-3 pb-1 flex-shrink-0">

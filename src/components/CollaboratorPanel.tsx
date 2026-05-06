@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Wedding } from '../types/database'
 import { useCollaborators } from '../hooks/useCollaborators'
 import type { PresenceUser } from '../hooks/usePresence'
+import { useTranslation } from '../i18n/useTranslation'
 
 interface Props {
   wedding: Wedding
@@ -12,6 +13,8 @@ interface Props {
 export function CollaboratorPanel({ wedding, onlineUsers, onClose }: Props) {
   const { data: collaborators } = useCollaborators(wedding.id)
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
+  const tr = useTranslation()
+  const c = tr.collaborator
 
   const onlineIds = new Set(onlineUsers.map((u) => u.userId))
   const shareLink = `${window.location.origin}?code=${wedding.share_code}`
@@ -43,7 +46,7 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose }: Props) {
       <div className="fixed right-3 top-16 z-50 w-72 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden">
         {/* Header */}
         <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-          <h3 className="font-semibold text-stone-800 text-sm">People & Sharing</h3>
+          <h3 className="font-semibold text-stone-800 text-sm">{c.title}</h3>
           <button
             onClick={onClose}
             className="w-6 h-6 flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
@@ -56,35 +59,33 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose }: Props) {
 
         {/* Invite section */}
         <div className="p-3 border-b border-stone-100 space-y-2">
-          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Invite others</p>
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{c.inviteOthers}</p>
           <div className="flex gap-2">
             <button
               onClick={() => copy('code')}
               className="flex-1 text-xs font-mono bg-stone-100 hover:bg-stone-200 rounded-xl px-3 py-2 text-stone-600 transition-colors text-left truncate"
             >
-              {copied === 'code' ? '✓ Copied!' : `Code: ${wedding.share_code}`}
+              {copied === 'code' ? c.copied : `Code: ${wedding.share_code}`}
             </button>
             <button
               onClick={() => copy('link')}
               className="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl px-3 py-2 font-medium transition-colors flex-shrink-0"
             >
-              {copied === 'link' ? '✓' : 'Copy Link'}
+              {copied === 'link' ? c.copiedShort : c.copyLink}
             </button>
           </div>
-          <p className="text-xs text-stone-400">
-            Share this code or link so others can join your wedding plan.
-          </p>
+          <p className="text-xs text-stone-400">{c.shareHint}</p>
         </div>
 
         {/* Collaborators list */}
         <div className="p-3 max-h-64 overflow-y-auto">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
-              Members ({collaborators?.length ?? 0})
+              {c.members} ({collaborators?.length ?? 0})
             </p>
             <div className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-xs text-stone-400">{onlineUsers.length} online</span>
+              <span className="text-xs text-stone-400">{onlineUsers.length} {c.online}</span>
             </div>
           </div>
           <div className="space-y-2">
@@ -105,14 +106,14 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose }: Props) {
                       {profile.name ?? 'Unknown'}
                     </p>
                     {isOnline && (
-                      <p className="text-xs text-emerald-500 leading-none mt-0.5">Online now</p>
+                      <p className="text-xs text-emerald-500 leading-none mt-0.5">{c.onlineNow}</p>
                     )}
                   </div>
                 </div>
               )
             })}
             {!collaborators?.length && (
-              <p className="text-xs text-stone-400 py-2 text-center">No members yet</p>
+              <p className="text-xs text-stone-400 py-2 text-center">{c.noMembers}</p>
             )}
           </div>
         </div>

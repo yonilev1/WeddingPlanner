@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import type { TaskWithSubtasks } from '../types/database'
 import { useUIStore } from '../store/uiStore'
+import { useTranslation } from '../i18n/useTranslation'
+
+const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-IL' }
 
 interface Props {
   categories: TaskWithSubtasks[]
@@ -33,7 +36,10 @@ function isSameDay(a: Date, b: Date) {
 }
 
 export function HeatmapView({ categories }: Props) {
-  const { openDrawer } = useUIStore()
+  const { openDrawer, language } = useUIStore()
+  const tr = useTranslation()
+  const h = tr.heatmap
+  const locale = LOCALE_MAP[language] ?? 'en-US'
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -78,13 +84,14 @@ export function HeatmapView({ categories }: Props) {
     <div className="p-4 sm:p-6 space-y-8 max-w-5xl mx-auto">
       {/* Legend */}
       <div className="flex items-center gap-4 flex-wrap">
-        <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Priority</span>
+        <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{h.priority}</span>
         {[5, 4, 3, 2, 1].map((p) => {
           const s = priorityStyle(p)
+          const label = [tr.drawer.p5Label, tr.drawer.p4Label, tr.drawer.p3Label, tr.drawer.p2Label, tr.drawer.p1Label][5 - p]
           return (
             <div key={p} className="flex items-center gap-1.5">
               <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
-              <span className="text-xs text-stone-500">{s.label}</span>
+              <span className="text-xs text-stone-500">{label}</span>
             </div>
           )
         })}
@@ -92,18 +99,18 @@ export function HeatmapView({ categories }: Props) {
 
       {/* Calendar months */}
       {months.map(({ year, month }) => {
-        const monthName = new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        const monthName = new Date(year, month, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' })
         const firstDow = startOfMonth(year, month).getDay()
         const numDays = daysInMonth(year, month)
 
         return (
           <div key={`${year}-${month}`}>
             <h3 className="text-base font-semibold text-stone-700 mb-3">{monthName}</h3>
-            <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
+            <div className="bg-white dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 overflow-hidden">
               {/* Weekday headers */}
-              <div className="grid grid-cols-7 border-b border-stone-100">
+              <div className="grid grid-cols-7 border-b border-stone-100 dark:border-stone-700">
                 {weekdays.map((w) => (
-                  <div key={w} className="py-2 text-center text-xs font-semibold text-stone-400">
+                  <div key={w} className="py-2 text-center text-xs font-semibold text-stone-400 dark:text-stone-500">
                     {w}
                   </div>
                 ))}
@@ -113,7 +120,7 @@ export function HeatmapView({ categories }: Props) {
               <div className="grid grid-cols-7">
                 {/* Leading empty cells */}
                 {Array.from({ length: firstDow }).map((_, i) => (
-                  <div key={`empty-${i}`} className="min-h-[72px] border-r border-b border-stone-50" />
+                  <div key={`empty-${i}`} className="min-h-[72px] border-r border-b border-stone-50 dark:border-stone-700" />
                 ))}
 
                 {Array.from({ length: numDays }).map((_, i) => {
@@ -127,14 +134,14 @@ export function HeatmapView({ categories }: Props) {
                   return (
                     <div
                       key={day}
-                      className={`min-h-[72px] p-1.5 border-r border-b border-stone-50 ${isPast ? 'bg-stone-50/50' : ''}`}
+                      className={`min-h-[72px] p-1.5 border-r border-b border-stone-50 dark:border-stone-700 ${isPast ? 'bg-stone-50/50 dark:bg-stone-900/30' : ''}`}
                     >
                       <div className={`text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${
                         isToday
                           ? 'bg-rose-500 text-white'
                           : isPast
-                          ? 'text-stone-300'
-                          : 'text-stone-500'
+                          ? 'text-stone-300 dark:text-stone-600'
+                          : 'text-stone-500 dark:text-stone-400'
                       }`}>
                         {day}
                       </div>
@@ -153,7 +160,7 @@ export function HeatmapView({ categories }: Props) {
                           )
                         })}
                         {tasks.length > 3 && (
-                          <p className="text-xs text-stone-400 px-1">+{tasks.length - 3} more</p>
+                          <p className="text-xs text-stone-400 px-1">+{tasks.length - 3} {h.more}</p>
                         )}
                       </div>
                     </div>
@@ -168,8 +175,8 @@ export function HeatmapView({ categories }: Props) {
       {allTasks.length === 0 && (
         <div className="text-center py-16">
           <p className="text-3xl mb-3">📅</p>
-          <p className="text-stone-500 text-sm">No tasks have due dates yet.</p>
-          <p className="text-stone-400 text-xs mt-1">Open a task and set a due date to see it here.</p>
+          <p className="text-stone-500 text-sm">{h.noDates}</p>
+          <p className="text-stone-400 text-xs mt-1">{h.noDatesHint}</p>
         </div>
       )}
     </div>

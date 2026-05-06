@@ -42,7 +42,8 @@ export function WeddingSettingsPanel({ wedding, onClose }: Props) {
   }
 
   const inputCls =
-    'w-full px-3 py-2.5 rounded-xl border border-stone-300 text-stone-700 text-sm ' +
+    'w-full px-3 py-2.5 rounded-xl border border-stone-300 dark:border-stone-600 ' +
+    'text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-800 text-sm ' +
     'focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all'
 
   return (

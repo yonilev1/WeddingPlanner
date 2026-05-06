@@ -7,14 +7,15 @@ interface Props {
   onClose: () => void
 }
 
-function fmt(n: number) {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
-}
+const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-IL' }
 
 export function BudgetPanel({ categories, onClose }: Props) {
-  const { openDrawer } = useUIStore()
+  const { openDrawer, language } = useUIStore()
   const tr = useTranslation()
   const b = tr.budget
+  const locale = LOCALE_MAP[language] ?? 'en-US'
+  const fmt = (n: number) =>
+    n.toLocaleString(locale, { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
   const catName = (title: string) => (tr.categoryNames as Record<string, string>)[title] ?? title
 
   type CategoryBudget = {
@@ -47,16 +48,16 @@ export function BudgetPanel({ categories, onClose }: Props) {
     <>
       <div className="fixed inset-0 bg-stone-900/25 backdrop-blur-[2px] z-40" onClick={onClose} />
 
-      <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white z-50 shadow-2xl flex flex-col">
+      <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-stone-900 z-50 shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200 dark:border-stone-700">
           <div>
-            <h2 className="font-semibold text-stone-800">{b.title}</h2>
+            <h2 className="font-semibold text-stone-800 dark:text-stone-100">{b.title}</h2>
             <p className="text-xs text-stone-400 mt-0.5">{b.subtitle}</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+            className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -67,15 +68,15 @@ export function BudgetPanel({ categories, onClose }: Props) {
         <div className="flex-1 min-h-0 overflow-y-auto">
           {/* Summary cards */}
           <div className="p-4 grid grid-cols-3 gap-3">
-            <div className="bg-stone-50 rounded-xl p-3 text-center">
+            <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3 text-center">
               <p className="text-xs text-stone-400 mb-1">{b.estimated}</p>
-              <p className="text-lg font-bold text-stone-800">{fmt(totalEstimated)}</p>
+              <p className="text-lg font-bold text-stone-800 dark:text-stone-100">{fmt(totalEstimated)}</p>
             </div>
-            <div className="bg-stone-50 rounded-xl p-3 text-center">
+            <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3 text-center">
               <p className="text-xs text-stone-400 mb-1">{b.spent}</p>
-              <p className="text-lg font-bold text-stone-800">{fmt(totalActual)}</p>
+              <p className="text-lg font-bold text-stone-800 dark:text-stone-100">{fmt(totalActual)}</p>
             </div>
-            <div className={`rounded-xl p-3 text-center ${overBudget ? 'bg-rose-50' : 'bg-emerald-50'}`}>
+            <div className={`rounded-xl p-3 text-center ${overBudget ? 'bg-rose-50 dark:bg-rose-900/30' : 'bg-emerald-50 dark:bg-emerald-900/30'}`}>
               <p className={`text-xs mb-1 ${overBudget ? 'text-rose-400' : 'text-emerald-500'}`}>
                 {overBudget ? b.over : b.remaining}
               </p>
@@ -88,7 +89,7 @@ export function BudgetPanel({ categories, onClose }: Props) {
           {/* Progress bar */}
           {totalEstimated > 0 && (
             <div className="px-4 pb-4">
-              <div className="h-2.5 bg-stone-100 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden">
                 <div
                   className={`h-full rounded-full transition-all ${overBudget ? 'bg-rose-400' : 'bg-emerald-400'}`}
                   style={{ width: `${Math.min((totalActual / totalEstimated) * 100, 100)}%` }}
@@ -109,20 +110,20 @@ export function BudgetPanel({ categories, onClose }: Props) {
                   const pct = cat.estimated > 0 ? Math.min((cat.actual / cat.estimated) * 100, 100) : 0
                   const over = cat.actual > cat.estimated && cat.estimated > 0
                   return (
-                    <div key={cat.id} className="bg-stone-50 rounded-xl p-3">
+                    <div key={cat.id} className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
                       <div className="flex items-center justify-between mb-1.5">
                         <button
                           onClick={() => { openDrawer(cat.id); onClose() }}
-                          className="text-sm font-medium text-stone-700 hover:text-rose-600 transition-colors text-left truncate"
+                          className="text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-rose-600 dark:hover:text-rose-400 transition-colors text-left truncate"
                         >
                           {catName(cat.title)}
                         </button>
-                        <span className={`text-xs font-medium flex-shrink-0 ml-2 ${over ? 'text-rose-500' : 'text-stone-500'}`}>
+                        <span className={`text-xs font-medium flex-shrink-0 ml-2 ${over ? 'text-rose-500' : 'text-stone-500 dark:text-stone-400'}`}>
                           {fmt(cat.actual)} / {fmt(cat.estimated)}
                         </span>
                       </div>
                       {cat.estimated > 0 && (
-                        <div className="h-1.5 bg-stone-200 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${over ? 'bg-rose-400' : 'bg-emerald-400'}`}
                             style={{ width: `${pct}%` }}
@@ -145,9 +146,9 @@ export function BudgetPanel({ categories, onClose }: Props) {
                   <button
                     key={t.id}
                     onClick={() => { openDrawer(t.id); onClose() }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 transition-colors text-left group"
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-left group"
                   >
-                    <span className="flex-1 text-sm text-stone-700 truncate group-hover:text-rose-600 transition-colors">
+                    <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 truncate group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
                       {t.title}
                     </span>
                     <div className="flex items-center gap-2 flex-shrink-0 text-xs">

@@ -1,4 +1,6 @@
 import type { TaskWithSubtasks } from '../types/database'
+import { useTranslation } from '../i18n/useTranslation'
+import { useUIStore } from '../store/uiStore'
 
 interface Props {
   categories: TaskWithSubtasks[]
@@ -6,11 +8,16 @@ interface Props {
   onClose: () => void
 }
 
-function fmt(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
+const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-IL' }
 
 export function PrintView({ categories, weddingName, onClose }: Props) {
+  const tr = useTranslation()
+  const p = tr.print
+  const { language } = useUIStore()
+  const locale = LOCALE_MAP[language] ?? 'en-US'
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
+
   const allSubtasks = categories.flatMap((c) => c.subtasks ?? [])
   const doneCount = allSubtasks.filter((t) => t.status === 'done').length
 
@@ -31,13 +38,13 @@ export function PrintView({ categories, weddingName, onClose }: Props) {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
           </svg>
-          Print / Save as PDF
+          {p.print}
         </button>
         <button
           onClick={onClose}
           className="px-4 py-2 bg-white text-stone-600 hover:text-stone-800 text-sm font-medium rounded-xl border border-stone-200 shadow transition-colors"
         >
-          Close
+          {p.close}
         </button>
       </div>
 
@@ -49,11 +56,11 @@ export function PrintView({ categories, weddingName, onClose }: Props) {
         <div className="max-w-2xl mx-auto px-8 py-12 print:py-6">
           {/* Header */}
           <div className="mb-8 pb-6 border-b-2 border-stone-200 text-center">
-            <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">Wedding Planning Checklist</p>
+            <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">{p.checklist}</p>
             <h1 className="text-3xl font-serif font-bold text-stone-900">{weddingName}</h1>
             <p className="text-sm text-stone-500 mt-3">
-              {doneCount} of {allSubtasks.length} tasks complete
-              {' · '}Generated {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {doneCount} {p.of} {allSubtasks.length} {p.tasksComplete}
+              {' · '}{p.generated} {new Date().toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
 
@@ -83,14 +90,14 @@ export function PrintView({ categories, weddingName, onClose }: Props) {
                       <h2 className="text-base font-bold text-stone-800">{cat.title}</h2>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-stone-400">
-                      {cat.due_date && <span>Due: {fmt(cat.due_date)}</span>}
+                      {cat.due_date && <span>{p.due}: {fmt(cat.due_date)}</span>}
                       <span>{done}/{subs.length}</span>
                     </div>
                   </div>
 
                   {/* Subtasks */}
                   {subs.length === 0 ? (
-                    <p className="text-sm text-stone-400 italic ml-7">No tasks in this category</p>
+                    <p className="text-sm text-stone-400 italic ml-7">{p.noTasks}</p>
                   ) : (
                     <div className="space-y-2 ml-2">
                       {subs.map((sub) => (
@@ -135,7 +142,7 @@ export function PrintView({ categories, weddingName, onClose }: Props) {
 
           {/* Footer */}
           <div className="mt-12 pt-6 border-t border-stone-200 text-center text-xs text-stone-400">
-            <p>💍 Created with Wedding Planner</p>
+            <p>💍 {p.footer}</p>
           </div>
         </div>
       </div>

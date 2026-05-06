@@ -8,6 +8,8 @@ import { useUIStore } from '../store/uiStore'
 import { supabase } from '../lib/supabase'
 import { useTranslation } from '../i18n/useTranslation'
 
+const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-IL' }
+
 interface Props {
   taskId: string
   tasks: Task[]
@@ -16,57 +18,56 @@ interface Props {
 
 type DrawerTab = 'details' | 'comments' | 'activity'
 
-// Labels are set dynamically from translations — see STATUS_OPTS() below
-
-const PRIORITY_OPTS = [
-  { value: 1, label: 'P1 — Very Low' },
-  { value: 2, label: 'P2 — Low' },
-  { value: 3, label: 'P3 — Medium' },
-  { value: 4, label: 'P4 — High' },
-  { value: 5, label: 'P5 — Critical' },
-]
-
 function initials(name: string | null) {
   if (!name) return '?'
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
-function relativeTime(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const m = Math.floor(diff / 60_000)
-  const h = Math.floor(m / 60)
-  const d = Math.floor(h / 24)
-  if (d > 0) return `${d}d ago`
-  if (h > 0) return `${h}h ago`
-  if (m > 0) return `${m}m ago`
-  return 'just now'
-}
-
-function actionSummary(action: string, oldVal: string | null, newVal: string | null) {
-  switch (action) {
-    case 'created': return 'created this task'
-    case 'status_changed': return `changed status: ${oldVal} → ${newVal}`
-    case 'priority_changed': return `changed priority: P${oldVal} → P${newVal}`
-    case 'title_changed': return `renamed to "${newVal}"`
-    case 'description_changed': return 'updated the description'
-    case 'due_date_changed': return `set due date to ${newVal ?? 'none'}`
-    default: return action.replace(/_/g, ' ')
-  }
-}
-
 export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
-  const { closeDrawer } = useUIStore()
+  const { closeDrawer, language } = useUIStore()
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
   const qc = useQueryClient()
   const tr = useTranslation()
   const d = tr.drawer
+  const locale = LOCALE_MAP[language] ?? 'en-US'
 
   const STATUS_OPTS: { value: TaskStatus; label: string }[] = [
     { value: 'todo', label: d.notStarted },
     { value: 'in_progress', label: d.inProgress },
     { value: 'done', label: d.done },
   ]
+
+  const PRIORITY_OPTS = [
+    { value: 1, label: d.p1Label },
+    { value: 2, label: d.p2Label },
+    { value: 3, label: d.p3Label },
+    { value: 4, label: d.p4Label },
+    { value: 5, label: d.p5Label },
+  ]
+
+  const relativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime()
+    const m = Math.floor(diff / 60_000)
+    const h = Math.floor(m / 60)
+    const dy = Math.floor(h / 24)
+    if (dy > 0) return `${dy}${d.timeAgoDays}`
+    if (h > 0) return `${h}${d.timeAgoHours}`
+    if (m > 0) return `${m}${d.timeAgoMinutes}`
+    return d.timeAgoJustNow
+  }
+
+  const actionSummary = (action: string, oldVal: string | null, newVal: string | null) => {
+    switch (action) {
+      case 'created': return d.actCreated
+      case 'status_changed': return `${d.actStatusChanged}: ${oldVal} → ${newVal}`
+      case 'priority_changed': return `${d.actPriorityChanged}: P${oldVal} → P${newVal}`
+      case 'title_changed': return `${d.actRenamed} "${newVal}"`
+      case 'description_changed': return d.actUpdatedDesc
+      case 'due_date_changed': return `${d.actSetDueDate} ${newVal ?? d.actNoDate}`
+      default: return action.replace(/_/g, ' ')
+    }
+  }
 
   // Escape key closes the drawer
   useEffect(() => {
@@ -79,6 +80,8 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   const [tab, setTab] = useState<DrawerTab>('details')
   const [localTitle, setLocalTitle] = useState(task?.title ?? '')
   const [localDesc, setLocalDesc] = useState(task?.description ?? '')
+  const [localEstimated, setLocalEstimated] = useState<string>(task?.estimated_cost != null ? String(task.estimated_cost) : '')
+  const [localActual, setLocalActual] = useState<string>(task?.actual_cost != null ? String(task.actual_cost) : '')
   const [newComment, setNewComment] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -92,6 +95,8 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
     if (task) {
       setLocalTitle(task.title)
       setLocalDesc(task.description ?? '')
+      setLocalEstimated(task.estimated_cost != null ? String(task.estimated_cost) : '')
+      setLocalActual(task.actual_cost != null ? String(task.actual_cost) : '')
     }
   }, [task?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -127,7 +132,8 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   }
 
   const inputCls =
-    'w-full px-3 py-2.5 rounded-xl border border-stone-300 text-stone-700 text-sm ' +
+    'w-full px-3 py-2.5 rounded-xl border border-stone-300 dark:border-stone-600 ' +
+    'text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-800 text-sm ' +
     'focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all'
 
   return (
@@ -136,12 +142,12 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
       <div className="fixed inset-0 bg-stone-900/25 backdrop-blur-[2px] z-40" onClick={closeDrawer} />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-white z-50 shadow-2xl flex flex-col">
+      <div className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-white dark:bg-stone-900 z-50 shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="flex items-start gap-3 px-5 py-4 border-b border-stone-200">
+        <div className="flex items-start gap-3 px-5 py-4 border-b border-stone-200 dark:border-stone-700">
           <div className="flex-1 min-w-0">
             <input
-              className="w-full text-lg font-semibold text-stone-800 bg-transparent border border-transparent hover:border-stone-200 focus:border-rose-300 focus:bg-stone-50 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors outline-none focus:ring-2 focus:ring-rose-200"
+              className="w-full text-lg font-semibold text-stone-800 dark:text-stone-100 bg-transparent border border-transparent hover:border-stone-200 dark:hover:border-stone-600 focus:border-rose-300 focus:bg-stone-50 dark:focus:bg-stone-800 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors outline-none focus:ring-2 focus:ring-rose-200"
               value={localTitle}
               onChange={(e) => setLocalTitle(e.target.value)}
               onBlur={() => localTitle.trim() && push({ title: localTitle.trim() })}
@@ -156,7 +162,7 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
             <div className="flex items-center gap-2 mt-1.5 ml-1">
               <PriorityBadge priority={task.priority} size="md" />
               <span className="text-xs text-stone-400">
-                {d.updated} {new Date(task.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {d.updated} {new Date(task.updated_at).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
               </span>
             </div>
           </div>
@@ -172,7 +178,7 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                 </button>
                 <button
                   onClick={() => setConfirmingDelete(false)}
-                  className="px-3 py-1.5 text-xs font-medium text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
                 >
                   {d.cancel ?? 'Cancel'}
                 </button>
@@ -190,7 +196,7 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
             )}
             <button
               onClick={closeDrawer}
-              className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+              className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -200,13 +206,13 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-stone-200 px-4">
+        <div className="flex border-b border-stone-200 dark:border-stone-700 px-4">
           {(['details', 'comments', 'activity'] as DrawerTab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`px-4 py-3 text-sm font-medium border-b-2 capitalize transition-colors ${
-                tab === t ? 'border-rose-400 text-rose-600' : 'border-transparent text-stone-500 hover:text-stone-700'
+                tab === t ? 'border-rose-400 text-rose-600' : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
               }`}
             >
               {t === 'details' ? d.details : t === 'comments' ? d.comments : d.activity}
@@ -235,8 +241,8 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                       onClick={() => push({ status: opt.value })}
                       className={`flex-1 py-2 text-xs font-medium rounded-xl border transition-all ${
                         task.status === opt.value
-                          ? 'bg-rose-50 border-rose-300 text-rose-700'
-                          : 'border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-stone-50'
+                          ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-400'
+                          : 'border-stone-200 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-stone-700'
                       }`}
                     >
                       {opt.label}
@@ -281,9 +287,10 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                       min="0"
                       step="1"
                       placeholder="0"
-                      defaultValue={task.estimated_cost ?? ''}
-                      onBlur={(e) => {
-                        const val = e.target.value === '' ? null : Number(e.target.value)
+                      value={localEstimated}
+                      onChange={(e) => setLocalEstimated(e.target.value)}
+                      onBlur={() => {
+                        const val = localEstimated === '' ? null : Number(localEstimated)
                         push({ estimated_cost: val })
                       }}
                       className={inputCls}
@@ -296,9 +303,10 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                       min="0"
                       step="1"
                       placeholder="0"
-                      defaultValue={task.actual_cost ?? ''}
-                      onBlur={(e) => {
-                        const val = e.target.value === '' ? null : Number(e.target.value)
+                      value={localActual}
+                      onChange={(e) => setLocalActual(e.target.value)}
+                      onBlur={() => {
+                        const val = localActual === '' ? null : Number(localActual)
                         push({ actual_cost: val })
                       }}
                       className={inputCls}
@@ -328,9 +336,9 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
               </div>
 
               {/* Meta */}
-              <div className="pt-2 border-t border-stone-100 text-xs text-stone-400 space-y-1">
-                <p>{d.created} {new Date(task.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                <p>{d.lastUpdated} {new Date(task.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+              <div className="pt-2 border-t border-stone-100 dark:border-stone-700 text-xs text-stone-400 space-y-1">
+                <p>{d.created} {new Date(task.created_at).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                <p>{d.lastUpdated} {new Date(task.updated_at).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
               </div>
             </div>
           )}
@@ -344,27 +352,27 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                 ) : (
                   comments.map((c) => (
                     <div key={c.id} className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 text-xs font-bold flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center text-rose-600 dark:text-rose-400 text-xs font-bold flex-shrink-0">
                         {initials(c.author.name)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-semibold text-stone-700">{c.author.name ?? 'Unknown'}</span>
+                          <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">{c.author.name ?? 'Unknown'}</span>
                           <span className="text-xs text-stone-400">{relativeTime(c.created_at)}</span>
                         </div>
-                        <p className="text-sm text-stone-600 mt-0.5 whitespace-pre-wrap">{c.text}</p>
+                        <p className="text-sm text-stone-600 dark:text-stone-300 mt-0.5 whitespace-pre-wrap">{c.text}</p>
                       </div>
                     </div>
                   ))
                 )}
               </div>
 
-              <form onSubmit={submitComment} className="p-4 border-t border-stone-200 flex gap-2">
+              <form onSubmit={submitComment} className="p-4 border-t border-stone-200 dark:border-stone-700 flex gap-2">
                 <input
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder={d.commentPlaceholder}
-                  className="flex-1 px-3.5 py-2 rounded-xl border border-stone-300 text-stone-700 text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all"
+                  className="flex-1 px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all"
                 />
                 <button
                   type="submit"
@@ -386,12 +394,12 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                 <div className="space-y-4">
                   {activity.map((item) => (
                     <div key={item.id} className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 text-xs font-semibold flex-shrink-0 mt-0.5">
+                      <div className="w-7 h-7 rounded-full bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-300 text-xs font-semibold flex-shrink-0 mt-0.5">
                         {initials(item.actor.name)}
                       </div>
                       <div>
-                        <p className="text-sm text-stone-600">
-                          <span className="font-semibold text-stone-700">{item.actor.name ?? 'Someone'}</span>
+                        <p className="text-sm text-stone-600 dark:text-stone-300">
+                          <span className="font-semibold text-stone-700 dark:text-stone-200">{item.actor.name ?? 'Someone'}</span>
                           {' '}{actionSummary(item.action, item.old_value, item.new_value)}
                         </p>
                         <p className="text-xs text-stone-400 mt-0.5">{relativeTime(item.created_at)}</p>

@@ -6,14 +6,17 @@ import { PriorityBadge } from './ui/PriorityBadge'
 import { StatusBadge } from './ui/StatusBadge'
 import { useUIStore } from '../store/uiStore'
 import { useTranslation } from '../i18n/useTranslation'
+import { LANGUAGES } from '../i18n/translations'
 
 interface Props {
   wedding: Wedding
   profile: Profile
 }
 
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+function getLocale(lang: string) {
+  return LANGUAGES.find((l) => l.code === lang)
+    ? ({ en: 'en-US', fr: 'fr-FR', he: 'he-IL' } as Record<string, string>)[lang] ?? 'en-US'
+    : 'en-US'
 }
 
 function isOverdue(d: string) {
@@ -26,7 +29,8 @@ export function DashboardScreen({ wedding, profile }: Props) {
   const d = tr.dashboard
 
   const { categories, isPending } = useTaskTree(wedding.id)
-  const { setActiveMainTab } = useUIStore()
+  const { setActiveMainTab, openDrawer, language } = useUIStore()
+  const locale = getLocale(language)
 
   const stats = useMemo(() => {
     const allSubs = categories.flatMap((c) => c.subtasks ?? [])
@@ -80,7 +84,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
               <p className="text-5xl font-bold leading-none">{Math.max(0, daysUntil)}</p>
               <p className="text-rose-100 text-sm mt-2">
                 {daysUntil > 0
-                  ? new Date(wedding.date!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                  ? new Date(wedding.date!).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })
                   : daysUntil === 0
                   ? d.today
                   : d.congrats}
@@ -140,7 +144,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
             {urgentTasks.map((task) => (
               <div
                 key={task.id}
-                onClick={() => setActiveMainTab('board')}
+                onClick={() => { setActiveMainTab('board'); openDrawer(task.id) }}
                 className="px-6 py-3.5 flex items-center gap-3 hover:bg-stone-50 transition-colors cursor-pointer"
               >
                 <div className="flex-1 min-w-0">
@@ -154,7 +158,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
                         ? 'bg-rose-100 text-rose-600'
                         : 'bg-amber-100 text-amber-600'
                     }`}>
-                      {isOverdue(task.due_date) ? `${d.overdue} · ` : ''}{formatDate(task.due_date)}
+                      {isOverdue(task.due_date) ? `${d.overdue} · ` : ''}{new Date(task.due_date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                     </span>
                   )}
                   <StatusBadge status={task.status} />
