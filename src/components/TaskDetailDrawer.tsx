@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Task, TaskStatus } from '../types/database'
 import { useUpdateTask, useDeleteTask } from '../hooks/useTasks'
 import { useComments, useAddComment, useActivity } from '../hooks/useComments'
+import { useCollaborators } from '../hooks/useCollaborators'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
 import { supabase } from '../lib/supabase'
@@ -96,9 +97,13 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   const [newComment, setNewComment] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionAnchor, setMentionAnchor] = useState<{ start: number; end: number } | null>(null)
+  const commentRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: comments } = useComments(taskId)
   const { data: activity } = useActivity(taskId)
+  const { data: collaborators = [] } = useCollaborators(weddingId)
   const addComment = useAddComment()
 
   useEffect(() => {
@@ -133,11 +138,55 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
     deleteTask.mutate({ id: task.id, weddingId }, { onSuccess: closeDrawer })
   }
 
+  const mentionOptions = mentionQuery !== null
+    ? collaborators.filter(c => c.name?.toLowerCase().includes(mentionQuery.toLowerCase()))
+    : []
+
+  function handleCommentChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    const val = e.target.value
+    setNewComment(val)
+    const cursor = e.target.selectionStart ?? val.length
+    const textBeforeCursor = val.slice(0, cursor)
+    const match = textBeforeCursor.match(/@([\w ]*)$/)
+    if (match) {
+      setMentionQuery(match[1])
+      setMentionAnchor({ start: cursor - match[0].length, end: cursor })
+    } else {
+      setMentionQuery(null)
+      setMentionAnchor(null)
+    }
+  }
+
+  function insertMention(name: string) {
+    if (!mentionAnchor) return
+    const before = newComment.slice(0, mentionAnchor.start)
+    const after = newComment.slice(mentionAnchor.end)
+    const next = `${before}@${name} ${after}`
+    setNewComment(next)
+    setMentionQuery(null)
+    setMentionAnchor(null)
+    setTimeout(() => {
+      commentRef.current?.focus()
+      const pos = mentionAnchor.start + name.length + 2
+      commentRef.current?.setSelectionRange(pos, pos)
+    }, 0)
+  }
+
+  function renderCommentText(text: string) {
+    return text.split(/(@\S+)/g).map((part, i) =>
+      part.startsWith('@')
+        ? <span key={i} style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>{part}</span>
+        : part
+    )
+  }
+
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newComment.trim() || !currentUserId) return
     await addComment.mutateAsync({ taskId, text: newComment.trim(), userId: currentUserId })
     setNewComment('')
+    setMentionQuery(null)
+    setMentionAnchor(null)
   }
 
   const TAB_LABELS: Record<DrawerTab, string> = {
@@ -401,27 +450,77 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{c.author.name ?? 'Unknown'}</span>
                           <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{relativeTime(c.created_at)}</span>
                         </div>
-                        <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 2, whiteSpace: 'pre-wrap' }}>{c.text}</p>
+                        <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 2, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                          {renderCommentText(c.text)}
+                        </p>
                       </div>
                     </div>
                   ))
                 )}
               </div>
 
-              <form onSubmit={submitComment} style={{ padding: 16, borderTop: '1px solid var(--line)', display: 'flex', gap: 8 }}>
-                <input
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder={d.commentPlaceholder}
-                  style={{ ...inputStyle, flex: 1, width: 'auto' }}
-                />
-                <button
-                  type="submit"
-                  disabled={!newComment.trim() || addComment.isPending}
-                  style={{ padding: '9px 16px', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 500, borderRadius: 10, border: 'none', cursor: 'pointer', opacity: (!newComment.trim() || addComment.isPending) ? 0.5 : 1, transition: 'opacity 120ms' }}
-                >
-                  {d.send}
-                </button>
+              {/* Comment input with @mention */}
+              <form onSubmit={submitComment} style={{ padding: 16, borderTop: '1px solid var(--line)' }}>
+                {/* Mention dropdown */}
+                {mentionQuery !== null && mentionOptions.length > 0 && (
+                  <div style={{
+                    background: 'var(--bg-card)', border: '1px solid var(--line)',
+                    borderRadius: 10, marginBottom: 8, overflow: 'hidden',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+                  }}>
+                    {mentionOptions.slice(0, 6).map((collab) => (
+                      <button
+                        key={collab.id}
+                        type="button"
+                        onClick={() => insertMention(collab.name ?? '')}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '8px 12px', background: 'none', border: 'none',
+                          cursor: 'pointer', textAlign: 'start', transition: 'background 100ms',
+                        }}
+                        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
+                        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'none')}
+                      >
+                        <div style={{
+                          width: 26, height: 26, borderRadius: 999, flexShrink: 0,
+                          background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, fontWeight: 700,
+                        }}>
+                          {initials(collab.name)}
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{collab.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                  <textarea
+                    ref={commentRef}
+                    value={newComment}
+                    onChange={handleCommentChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') { setMentionQuery(null); setMentionAnchor(null) }
+                      if (e.key === 'Enter' && !e.shiftKey && mentionQuery === null) {
+                        e.preventDefault()
+                        submitComment(e as unknown as React.FormEvent)
+                      }
+                    }}
+                    placeholder={`${d.commentPlaceholder} — type @ to mention`}
+                    rows={2}
+                    style={{ ...inputStyle, flex: 1, width: 'auto', resize: 'none', lineHeight: 1.5 }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!newComment.trim() || addComment.isPending}
+                    style={{ padding: '9px 16px', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 500, borderRadius: 10, border: 'none', cursor: 'pointer', opacity: (!newComment.trim() || addComment.isPending) ? 0.5 : 1, transition: 'opacity 120ms', flexShrink: 0 }}
+                  >
+                    {d.send}
+                  </button>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 5 }}>
+                  Type <span style={{ color: 'var(--accent-ink)', fontWeight: 600 }}>@</span> to mention a collaborator · Enter to send · Shift+Enter for new line
+                </p>
               </form>
             </div>
           )}
