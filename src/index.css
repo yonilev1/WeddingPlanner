@@ -171,6 +171,20 @@
   .stat-tiles-grid { grid-template-columns: 1fr 1fr; margin-bottom: 28px; }
 }
 
+/* Budget summary tiles — 3 col desktop, stacked on mobile */
+.budget-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--line);
+  gap: 1px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+@media (max-width: 480px) {
+  .budget-tiles-grid { grid-template-columns: 1fr; }
+}
+
 /* Dashboard two-col section */
 .dashboard-two-col {
   display: grid;

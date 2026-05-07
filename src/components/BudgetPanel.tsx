@@ -45,33 +45,26 @@ export function BudgetPanel({ categories, onClose, asPage }: Props) {
   ).sort((a, b) => (b.estimated_cost ?? 0) - (a.estimated_cost ?? 0)).slice(0, 8)
 
   const inner = (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 40px 80px' }}>
+    <div className="dashboard-page" style={{ maxWidth: 1080 }}>
       {/* Page header */}
-      <div style={{ marginBottom: 32 }}>
-        <p className="font-display" style={{ fontSize: 44, lineHeight: 1.1, color: 'var(--ink)' }}>{b.title}</p>
+      <div style={{ marginBottom: 28 }}>
+        <p className="font-display" style={{ fontSize: 'clamp(28px, 5vw, 44px)', lineHeight: 1.1, color: 'var(--ink)' }}>{b.title}</p>
         <p style={{ color: 'var(--ink-3)', marginTop: 4, fontSize: 14 }}>{b.subtitle}</p>
       </div>
 
       {/* Summary tiles */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-        background: 'var(--bg-card)', border: '1px solid var(--line)',
-        borderRadius: 16, marginBottom: 32, overflow: 'hidden',
-      }}>
+      <div className="budget-tiles-grid">
         {[
           { label: b.estimated, value: fmt(totalEstimated), tone: 'neutral' },
           { label: b.spent,     value: fmt(totalActual),    tone: 'neutral' },
           { label: overBudget ? b.over : b.remaining, value: fmt(Math.abs(remaining)), tone: overBudget ? 'bad' : 'ok' },
         ].map((tile, i) => (
-          <div key={i} style={{
-            padding: '24px 28px',
-            borderInlineEnd: i < 2 ? '1px solid var(--line)' : 'none',
-          }}>
+          <div key={i} style={{ padding: '20px 20px', background: 'var(--bg-card)' }}>
             <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
               {tile.label}
             </p>
             <p className="font-display" style={{
-              fontSize: 36,
+              fontSize: 'clamp(22px, 4vw, 36px)',
               color: tile.tone === 'bad' ? 'var(--bad)' : tile.tone === 'ok' ? 'var(--ok)' : 'var(--ink)',
             }}>{tile.value}</p>
           </div>
