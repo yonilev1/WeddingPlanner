@@ -17,35 +17,42 @@ import { useTranslation } from './i18n/useTranslation'
 import { LANGUAGES, type Language } from './i18n/translations'
 import { WeddingSettingsPanel } from './components/WeddingSettingsPanel'
 
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function Icon({ d, size = 16, sw = 1.5 }: { d: string; size?: number; sw?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0 }}>
+      <path d={d} />
+    </svg>
+  )
+}
+
+const ICONS = {
+  sun:      "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l.707.707M7.05 6.343l-.707-.707M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
+  moon:     "M21 13a9 9 0 1 1-9-10 7 7 0 0 0 9 10z",
+  settings: "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
+  printer:  "M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z",
+  globe:    "M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z",
+  home:     "M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z",
+  list:     "M4 6h16M4 12h16M4 18h16",
+  wallet:   "M2 8h20v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8zM2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2M12 14h.01",
+  users:    "M17 21a5 5 0 0 0-10 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21a5 5 0 0 0-7.5-4.33M2 21a5 5 0 0 1 7.5-4.33",
+  signout:  "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1",
+}
+
 // ─── Spinner ──────────────────────────────────────────────────────────────────
 
 function Spinner() {
   const tr = useTranslation()
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950 flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
       <div className="text-center">
-        <div className="text-4xl mb-3">💍</div>
-        <p className="text-stone-400 text-sm">{tr.common.loading}</p>
+        <p className="font-display text-5xl mb-4" style={{ color: 'var(--ink)' }}>e</p>
+        <p className="text-xs uppercase tracking-widest font-mono-ui" style={{ color: 'var(--ink-4)' }}>{tr.common.loading}</p>
       </div>
     </div>
-  )
-}
-
-// ─── Sun / Moon icons ─────────────────────────────────────────────────────────
-
-function SunIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l.707.707M7.05 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-    </svg>
-  )
-}
-
-function MoonIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-    </svg>
   )
 }
 
@@ -71,22 +78,23 @@ function LanguagePicker() {
       <button
         onClick={() => setOpen(o => !o)}
         title="Language"
-        className="flex items-center gap-1 w-auto px-2 h-8 rounded-full bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400 text-xs font-medium transition-colors"
+        style={iconBtnStyle}
       >
-        <span>{current.flag}</span>
-        <span className="hidden sm:inline">{current.code.toUpperCase()}</span>
+        <Icon d={ICONS.globe} size={14} />
+        <span className="hidden sm:inline text-xs ml-1">{current.code.toUpperCase()}</span>
       </button>
       {open && (
-        <div className="absolute right-0 top-10 z-50 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg overflow-hidden min-w-[130px]">
+        <div className="absolute end-0 top-10 z-50 rounded-xl overflow-hidden min-w-[140px] anim-pop"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--line)', boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}>
           {LANGUAGES.map(l => (
             <button
               key={l.code}
               onClick={() => { setLanguage(l.code as Language); setOpen(false) }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors text-start ${
-                language === l.code
-                  ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600'
-                  : 'hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200'
-              }`}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-start transition-colors"
+              style={{
+                background: language === l.code ? 'var(--accent-soft)' : 'transparent',
+                color: language === l.code ? 'var(--accent-ink)' : 'var(--ink-2)',
+              }}
             >
               <span>{l.flag}</span>
               <span>{l.label}</span>
@@ -98,7 +106,17 @@ function LanguagePicker() {
   )
 }
 
+const iconBtnStyle: React.CSSProperties = {
+  height: 32, minWidth: 32, padding: '0 8px',
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+  background: 'var(--bg-card)', color: 'var(--ink-3)',
+  border: '1px solid var(--line)', borderRadius: 8, cursor: 'pointer',
+  transition: 'all 120ms',
+}
+
 // ─── Main app shell ───────────────────────────────────────────────────────────
+
+type MainTab = 'dashboard' | 'board' | 'budget' | 'people'
 
 function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
   const tr = useTranslation()
@@ -112,10 +130,6 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
     activeMainTab,
     setActiveMainTab,
     drawerTaskId,
-    collaboratorPanelOpen,
-    setCollaboratorPanelOpen,
-    budgetPanelOpen,
-    setBudgetPanelOpen,
     darkMode,
     toggleDarkMode,
     tourDone,
@@ -125,7 +139,6 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
   const onlineUsers = usePresence(weddingId, userId, profile?.name ?? null)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Sync dark mode class on mount and change
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
   }, [darkMode])
@@ -133,154 +146,141 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
   if (!wedding) return <Spinner />
 
   const daysUntil = wedding.date
-    ? Math.ceil((new Date(wedding.date).getTime() - Date.now()) / 86_400_000)
+    ? Math.max(0, Math.ceil((new Date(wedding.date).getTime() - Date.now()) / 86_400_000))
     : null
 
-  const copyShareCode = () => {
-    navigator.clipboard.writeText(wedding.share_code).catch(() => {})
-  }
+  const NAV: [MainTab, string, string][] = [
+    ['dashboard', n.overview,   ICONS.home],
+    ['board',     n.tasks,      ICONS.list],
+    ['budget',    n.budgetTracker, ICONS.wallet],
+    ['people',    n.peopleSharing, ICONS.users],
+  ]
 
   return (
-    <div className="h-screen flex flex-col bg-stone-50 dark:bg-stone-950 overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: 'var(--bg)' }}>
       {/* Top nav */}
-      <header className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 flex-shrink-0 z-30">
-        <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 h-14">
-          {/* Brand */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-xl leading-none">💍</span>
-            <span className="font-serif font-semibold text-stone-800 dark:text-stone-100 max-w-[120px] sm:max-w-[180px] truncate hidden sm:block">
+      <header style={{
+        height: 56, borderBottom: '1px solid var(--line)',
+        background: 'var(--bg-card)',
+        display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8,
+        flexShrink: 0, position: 'sticky', top: 0, zIndex: 30,
+      }}>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <div style={{
+            width: 28, height: 28, borderRadius: 6,
+            background: 'var(--accent)', color: 'white',
+            display: 'grid', placeItems: 'center',
+            fontFamily: '"Instrument Serif", serif', fontSize: 16,
+          }}>e</div>
+          <div className="hidden sm:block leading-none">
+            <p className="font-display text-sm font-medium" style={{ color: 'var(--ink)' }}>everafter</p>
+            <p className="font-mono-ui text-[10px] uppercase tracking-widest" style={{ color: 'var(--ink-4)' }}>
               {wedding.name}
-            </span>
-          </div>
-
-          {/* Tab switcher */}
-          <div className="flex items-center gap-0.5 bg-stone-100 dark:bg-stone-800 rounded-xl p-1">
-            {(['dashboard', 'board'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveMainTab(tab)}
-                className={`px-3 sm:px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                  activeMainTab === tab
-                    ? 'bg-white dark:bg-stone-700 text-stone-800 dark:text-stone-100 shadow-sm'
-                    : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
-                }`}
-              >
-                {tab === 'dashboard' ? n.overview : n.tasks}
-              </button>
-            ))}
-          </div>
-
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-            {/* Countdown chip */}
-            {daysUntil !== null && daysUntil >= 0 && (
-              <div className="hidden lg:flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-full px-3 py-1">
-                <span className="text-rose-600 text-xs">💒</span>
-                <span className="text-rose-700 text-xs font-semibold">{daysUntil}d</span>
-              </div>
-            )}
-
-            {/* Share code */}
-            <button
-              onClick={copyShareCode}
-              title={n.copyShareCode}
-              className="hidden md:flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-full px-3 py-1.5 transition-colors font-mono tracking-wider"
-            >
-              🔗 {wedding.share_code}
-            </button>
-
-            {/* Language picker */}
-            <LanguagePicker />
-
-            {/* Wedding settings */}
-            <button
-              onClick={() => setSettingsOpen(true)}
-              title={n.settings}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-
-            {/* Dark mode toggle */}
-            <button
-              onClick={toggleDarkMode}
-              title={darkMode ? n.switchToLight : n.switchToDark}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400"
-            >
-              {darkMode ? <SunIcon /> : <MoonIcon />}
-            </button>
-
-            {/* Budget button */}
-            <button
-              onClick={() => setBudgetPanelOpen(true)}
-              title={n.budgetTracker}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                budgetPanelOpen
-                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-600'
-                  : 'bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-
-            {/* Collaborator panel button */}
-            <button
-              onClick={() => setCollaboratorPanelOpen(!collaboratorPanelOpen)}
-              title={n.peopleSharing}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors relative ${
-                collaboratorPanelOpen
-                  ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600'
-                  : 'bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-500 dark:text-stone-400'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {onlineUsers.length > 1 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-white dark:border-stone-900 rounded-full" />
-              )}
-            </button>
-
-            {/* Avatar / sign out */}
-            <button
-              onClick={signOut}
-              title={n.signOut}
-              className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/40 hover:bg-rose-200 dark:hover:bg-rose-900/60 flex items-center justify-center text-rose-600 text-xs font-bold transition-colors"
-            >
-              {profile?.name?.charAt(0).toUpperCase() ?? '?'}
-            </button>
+            </p>
           </div>
         </div>
+
+        {/* Nav tabs */}
+        <nav className="flex items-center gap-0.5" style={{ marginInlineStart: 4 }}>
+          {NAV.map(([id, label, iconPath]) => {
+            const active = activeMainTab === id
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveMainTab(id as any)}
+                className="flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg transition-all"
+                style={{
+                  color: active ? 'var(--ink)' : 'var(--ink-3)',
+                  background: active ? 'var(--bg-soft)' : 'transparent',
+                  border: 'none', cursor: 'pointer',
+                }}
+              >
+                <Icon d={iconPath} size={13} />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div style={{ flex: 1 }} />
+
+        {/* Countdown chip */}
+        {daysUntil !== null && (
+          <div className="hidden lg:flex items-baseline gap-2 px-3 py-1.5 rounded-full"
+            style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)' }}>
+            <span className="font-display tabular-nums text-base" style={{ color: 'var(--ink)' }}>{daysUntil}</span>
+            <span className="font-mono-ui text-[10px] uppercase tracking-widest" style={{ color: 'var(--ink-3)' }}>
+              days
+            </span>
+          </div>
+        )}
+
+        {/* Online avatars */}
+        {onlineUsers.length > 1 && (
+          <div className="hidden md:flex items-center" style={{ marginInlineStart: -4 }}>
+            {onlineUsers.slice(0, 4).map((u, i) => (
+              <div key={u.userId} style={{ marginInlineStart: i === 0 ? 0 : -8, zIndex: 4 - i, position: 'relative' }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: 999,
+                  background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+                  display: 'grid', placeItems: 'center',
+                  fontSize: 10, fontWeight: 600,
+                  border: '2px solid var(--bg-card)',
+                }}>
+                  {(u.name ?? '?').charAt(0).toUpperCase()}
+                </div>
+                <div style={{
+                  position: 'absolute', bottom: -1, right: -1,
+                  width: 8, height: 8, borderRadius: 999,
+                  background: 'var(--ok)', border: '2px solid var(--bg-card)'
+                }} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Icon actions */}
+        <button onClick={toggleDarkMode} title={darkMode ? n.switchToLight : n.switchToDark} style={iconBtnStyle}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+          <Icon d={darkMode ? ICONS.sun : ICONS.moon} size={14} />
+        </button>
+        <span className="hidden sm:contents">
+          <button onClick={() => setSettingsOpen(true)} title={n.settings} style={iconBtnStyle}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+            <Icon d={ICONS.settings} size={14} />
+          </button>
+          <LanguagePicker />
+          <button onClick={signOut} title={n.signOut} style={iconBtnStyle}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+            <Icon d={ICONS.signout} size={14} />
+          </button>
+        </span>
       </header>
 
       {/* Content */}
-      <main className="flex-1 min-h-0 overflow-auto">
+      <main className="flex-1 min-h-0 overflow-auto scrollbar-thin">
         {activeMainTab === 'dashboard' && profile && (
           <DashboardScreen wedding={wedding} profile={profile} />
         )}
         {activeMainTab === 'board' && (
           <TaskBoardScreen wedding={wedding} />
         )}
+        {activeMainTab === 'budget' && (
+          <BudgetPanel categories={categories} onClose={() => setActiveMainTab('dashboard' as any)} asPage />
+        )}
+        {activeMainTab === 'people' && (
+          <CollaboratorPanel
+            wedding={wedding}
+            onlineUsers={onlineUsers}
+            onClose={() => setActiveMainTab('dashboard' as any)}
+            asPage
+          />
+        )}
       </main>
-
-      {/* Panels */}
-      {collaboratorPanelOpen && (
-        <CollaboratorPanel
-          wedding={wedding}
-          onlineUsers={onlineUsers}
-          onClose={() => setCollaboratorPanelOpen(false)}
-        />
-      )}
-      {budgetPanelOpen && (
-        <BudgetPanel
-          categories={categories}
-          onClose={() => setBudgetPanelOpen(false)}
-        />
-      )}
 
       {/* Task detail drawer */}
       {drawerTaskId && allTasks && (
@@ -296,7 +296,7 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
         <WeddingSettingsPanel wedding={wedding} onClose={() => setSettingsOpen(false)} />
       )}
 
-      {/* Onboarding tour — show once per browser */}
+      {/* Onboarding tour */}
       {!tourDone && (
         <OnboardingTour onComplete={() => setTourDone(true)} />
       )}
@@ -310,7 +310,6 @@ export default function App() {
   const { user, profile, loading, refreshProfile } = useAuth()
   const { setScreen, language, setLanguage } = useUIStore()
 
-  // Apply stored language direction on first load
   useEffect(() => {
     setLanguage(language)
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -3,21 +3,27 @@ interface Props {
   size?: 'sm' | 'md'
 }
 
-const CONFIG: Record<number, { label: string; classes: string }> = {
-  1: { label: 'P1', classes: 'bg-stone-100 text-stone-400' },
-  2: { label: 'P2', classes: 'bg-sky-100 text-sky-600' },
-  3: { label: 'P3', classes: 'bg-amber-100 text-amber-600' },
-  4: { label: 'P4', classes: 'bg-orange-100 text-orange-600' },
-  5: { label: 'P5', classes: 'bg-rose-100 text-rose-600' },
+const TONES: Record<number, { bg: string; color: string; border: string }> = {
+  5: { bg: 'var(--bad-soft)',  color: 'var(--bad)',   border: 'var(--bad-soft)' },
+  4: { bg: 'var(--warn-soft)', color: 'var(--warn)',  border: 'var(--warn-soft)' },
+  3: { bg: 'var(--bg-soft)',   color: 'var(--ink-3)', border: 'var(--line)' },
+  2: { bg: 'var(--bg-soft)',   color: 'var(--ink-3)', border: 'var(--line)' },
+  1: { bg: 'transparent',      color: 'var(--ink-4)', border: 'var(--line)' },
 }
 
 export function PriorityBadge({ priority, size = 'sm' }: Props) {
   if (!priority) return null
-  const { label, classes } = CONFIG[priority] ?? CONFIG[3]
-  const padding = size === 'sm' ? 'px-1.5 py-0.5 text-xs' : 'px-2.5 py-1 text-sm'
+  const t = TONES[priority] ?? TONES[3]
+  const fs = size === 'sm' ? 11 : 13
   return (
-    <span className={`inline-flex items-center rounded-full font-semibold ${padding} ${classes}`}>
-      {label}
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      padding: size === 'sm' ? '2px 7px' : '3px 10px',
+      fontSize: fs, fontWeight: 500, letterSpacing: '0.01em', lineHeight: 1.4,
+      borderRadius: 999, background: t.bg, color: t.color,
+      border: `1px solid ${t.border}`, whiteSpace: 'nowrap',
+    }}>
+      P{priority}
     </span>
   )
 }

@@ -2,52 +2,194 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Design tokens — Modern minimal. Off-white, deep ink, terracotta.
+   ============================================================ */
+
+:root {
+  --bg:        oklch(0.985 0.003 80);
+  --bg-soft:   oklch(0.97  0.004 80);
+  --bg-card:   oklch(1     0     0);
+  --ink:       oklch(0.18  0.01  80);
+  --ink-2:     oklch(0.32  0.01  80);
+  --ink-3:     oklch(0.48  0.01  80);
+  --ink-4:     oklch(0.65  0.008 80);
+  --line:      oklch(0.9   0.005 80);
+  --line-soft: oklch(0.94  0.004 80);
+
+  /* Accent — muted terracotta */
+  --accent:      oklch(0.62 0.13 35);
+  --accent-soft: oklch(0.95 0.02 35);
+  --accent-ink:  oklch(0.42 0.13 35);
+
+  /* Status tones */
+  --ok:        oklch(0.62 0.09 150);
+  --ok-soft:   oklch(0.95 0.02 150);
+  --warn:      oklch(0.7  0.11 75);
+  --warn-soft: oklch(0.96 0.025 75);
+  --bad:       oklch(0.6  0.14 25);
+  --bad-soft:  oklch(0.95 0.025 25);
+
+  --radius:    12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+}
+
+/* Dark mode tokens */
+.dark {
+  --bg:        oklch(0.18  0.005 80);
+  --bg-soft:   oklch(0.22  0.006 80);
+  --bg-card:   oklch(0.215 0.006 80);
+  --ink:       oklch(0.96  0.005 80);
+  --ink-2:     oklch(0.85  0.006 80);
+  --ink-3:     oklch(0.65  0.008 80);
+  --ink-4:     oklch(0.5   0.008 80);
+  --line:      oklch(0.32  0.008 80);
+  --line-soft: oklch(0.27  0.007 80);
+  --accent-soft: oklch(0.32 0.04 35);
+  --ok-soft:   oklch(0.3   0.03 150);
+  --warn-soft: oklch(0.32  0.04 75);
+  --bad-soft:  oklch(0.3   0.04 25);
+}
+
 @layer base {
   html { height: 100%; }
   body {
     height: 100%;
-    @apply bg-stone-50 text-stone-800 antialiased;
+    font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.005em;
   }
-  html.dark body {
-    @apply bg-stone-950 text-stone-100;
+  /* Hebrew: swap to Heebo */
+  [lang="he"] body,
+  [lang="he"] input,
+  [lang="he"] textarea,
+  [lang="he"] button,
+  [lang="he"] select {
+    font-family: "Heebo", -apple-system, sans-serif;
   }
   #root { height: 100%; }
+  button { font-family: inherit; }
+  input, textarea, select { font-family: inherit; color: inherit; }
 }
 
 @layer utilities {
+  /* Display / editorial text */
+  .font-display {
+    font-family: "Instrument Serif", "Times New Roman", serif;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .font-mono-ui {
+    font-family: "Geist Mono", ui-monospace, "SF Mono", monospace;
+  }
+
+  /* Hairline borders using design tokens */
+  .hairline       { border: 1px solid var(--line); }
+  .hairline-b     { border-bottom: 1px solid var(--line); }
+  .hairline-t     { border-top: 1px solid var(--line); }
+  .hairline-s     { border-inline-start: 1px solid var(--line); }
+  .hairline-e     { border-inline-end: 1px solid var(--line); }
+
+  /* Token color utilities */
+  .bg-canvas      { background: var(--bg); }
+  .bg-soft        { background: var(--bg-soft); }
+  .bg-card        { background: var(--bg-card); }
+  .text-ink       { color: var(--ink); }
+  .text-ink-2     { color: var(--ink-2); }
+  .text-ink-3     { color: var(--ink-3); }
+  .text-ink-4     { color: var(--ink-4); }
+  .text-accent    { color: var(--accent); }
+  .text-accent-ink { color: var(--accent-ink); }
+
+  /* Scrollbar */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: theme('colors.stone.300') transparent;
+    scrollbar-color: var(--line) transparent;
   }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 999px;
+  }
+}
+
+/* Animations */
+@keyframes slideInRight {
+  from { transform: translateX(6%); opacity: 0; }
+  to   { transform: translateX(0);  opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pop {
+  0%   { transform: scale(0.93); opacity: 0; }
+  60%  { transform: scale(1.04); }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.anim-fade-in  { animation: fadeIn       200ms ease both; }
+.anim-pop      { animation: pop          220ms cubic-bezier(0.2, 0.9, 0.4, 1.2) both; }
+.anim-slide-r  { animation: slideInRight 280ms cubic-bezier(0.2, 0.8, 0.2, 1)  both; }
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Responsive layout helpers ───────────────────────────────────────────── */
+
+.dashboard-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 40px 80px;
+}
+@media (max-width: 640px) {
+  .dashboard-page { padding: 20px 16px 60px; }
+}
+
+/* Stat tiles — 4 col desktop, 2×2 mobile */
+.stat-tiles-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  background: var(--line);
+  gap: 1px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+@media (max-width: 640px) {
+  .stat-tiles-grid { grid-template-columns: 1fr 1fr; margin-bottom: 28px; }
+}
+
+/* Dashboard two-col section */
+.dashboard-two-col {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 28px;
+}
+@media (max-width: 768px) {
+  .dashboard-two-col { grid-template-columns: 1fr; }
 }
 
 /* ── Print styles ─────────────────────────────────────────────────────────── */
 @media print {
-  /* Hide everything except the print content panel */
-  body > #root > * {
-    display: none !important;
-  }
-
-  /* Show only our print panel */
+  body > #root > * { display: none !important; }
   #print-content {
     display: block !important;
     position: static !important;
     overflow: visible !important;
   }
-
-  /* Force white background */
-  body, html {
-    background: white !important;
-    color: black !important;
-  }
-
-  /* Page breaks */
-  .break-inside-avoid-page {
-    break-inside: avoid;
-  }
-
-  /* Hide nav-bar controls when printing */
-  .print\:hidden {
-    display: none !important;
-  }
+  body, html { background: white !important; color: black !important; }
+  .break-inside-avoid-page { break-inside: avoid; }
+  .print\:hidden { display: none !important; }
 }

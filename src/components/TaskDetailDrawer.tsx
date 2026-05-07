@@ -23,6 +23,18 @@ function initials(name: string | null) {
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
+const fieldLabel: React.CSSProperties = {
+  display: 'block', fontSize: 10, fontWeight: 600, color: 'var(--ink-4)',
+  letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8,
+  fontFamily: 'var(--font-mono, monospace)',
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '9px 12px', fontSize: 14, borderRadius: 10,
+  border: '1px solid var(--line)', background: 'var(--bg)', color: 'var(--ink)',
+  outline: 'none', transition: 'border-color 120ms', boxSizing: 'border-box',
+}
+
 export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   const { closeDrawer, language } = useUIStore()
   const updateTask = useUpdateTask()
@@ -69,7 +81,6 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
     }
   }
 
-  // Escape key closes the drawer
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') closeDrawer() }
     window.addEventListener('keydown', handler)
@@ -90,7 +101,6 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   const { data: activity } = useActivity(taskId)
   const addComment = useAddComment()
 
-  // Keep local fields in sync when task changes
   useEffect(() => {
     if (task) {
       setLocalTitle(task.title)
@@ -104,7 +114,6 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
   }, [])
 
-  // Realtime subscription for comments
   useEffect(() => {
     const ch = supabase
       .channel(`comments:${taskId}`)
@@ -131,26 +140,48 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
     setNewComment('')
   }
 
-  const inputCls =
-    'w-full px-3 py-2.5 rounded-xl border border-stone-300 dark:border-stone-600 ' +
-    'text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-800 text-sm ' +
-    'focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all'
+  const TAB_LABELS: Record<DrawerTab, string> = {
+    details: d.details,
+    comments: d.comments,
+    activity: d.activity,
+  }
 
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-stone-900/25 backdrop-blur-[2px] z-40" onClick={closeDrawer} />
+      <div
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.18)', backdropFilter: 'blur(2px)', zIndex: 40 }}
+        onClick={closeDrawer}
+      />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-white dark:bg-stone-900 z-50 shadow-2xl flex flex-col">
+      <div style={{
+        position: 'fixed', right: 0, top: 0, height: '100%', width: '100%', maxWidth: 440,
+        background: 'var(--bg-card)', zIndex: 50,
+        boxShadow: '-8px 0 40px rgba(0,0,0,0.12)',
+        display: 'flex', flexDirection: 'column',
+        animation: 'slideInRight 200ms cubic-bezier(0.2,0.8,0.2,1)',
+      }}>
+
         {/* Header */}
-        <div className="flex items-start gap-3 px-5 py-4 border-b border-stone-200 dark:border-stone-700">
-          <div className="flex-1 min-w-0">
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '20px 20px 16px', borderBottom: '1px solid var(--line)' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <input
-              className="w-full text-lg font-semibold text-stone-800 dark:text-stone-100 bg-transparent border border-transparent hover:border-stone-200 dark:hover:border-stone-600 focus:border-rose-300 focus:bg-stone-50 dark:focus:bg-stone-800 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors outline-none focus:ring-2 focus:ring-rose-200"
+              style={{
+                width: '100%', fontSize: 17, fontWeight: 600, color: 'var(--ink)',
+                background: 'transparent', border: '1px solid transparent',
+                borderRadius: 8, padding: '4px 8px', margin: '-4px -8px',
+                outline: 'none', transition: 'border-color 120ms, background 120ms',
+                boxSizing: 'content-box',
+              }}
+              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = 'var(--accent)'; (e.target as HTMLInputElement).style.background = 'var(--bg-soft)' }}
+              onBlur={e => {
+                (e.target as HTMLInputElement).style.borderColor = 'transparent'
+                ;(e.target as HTMLInputElement).style.background = 'transparent'
+                if (localTitle.trim()) push({ title: localTitle.trim() })
+              }}
               value={localTitle}
               onChange={(e) => setLocalTitle(e.target.value)}
-              onBlur={() => localTitle.trim() && push({ title: localTitle.trim() })}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
@@ -159,26 +190,27 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                 }
               }}
             />
-            <div className="flex items-center gap-2 mt-1.5 ml-1">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, marginLeft: 2 }}>
               <PriorityBadge priority={task.priority} size="md" />
-              <span className="text-xs text-stone-400">
+              <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>
                 {d.updated} {new Date(task.updated_at).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0 mt-1">
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 2 }}>
             {confirmingDelete ? (
               <>
                 <button
                   onClick={handleDelete}
                   disabled={deleteTask.isPending}
-                  className="px-3 py-1.5 text-xs font-medium bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors"
+                  style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, background: 'var(--bad)', color: '#fff', borderRadius: 8, border: 'none', cursor: 'pointer' }}
                 >
                   {deleteTask.isPending ? '…' : d.confirmDelete ?? 'Delete'}
                 </button>
                 <button
                   onClick={() => setConfirmingDelete(false)}
-                  className="px-3 py-1.5 text-xs font-medium text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
+                  style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, color: 'var(--ink-3)', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer' }}
                 >
                   {d.cancel ?? 'Cancel'}
                 </button>
@@ -186,8 +218,10 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
             ) : (
               <button
                 onClick={() => setConfirmingDelete(true)}
-                className="p-1.5 text-stone-300 hover:text-rose-400 hover:bg-rose-50 rounded-lg transition-colors"
                 title={d.deleteTask ?? 'Delete task'}
+                style={{ padding: 6, color: 'var(--ink-4)', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer', transition: 'color 120ms' }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--bad)')}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-4)')}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -196,7 +230,9 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
             )}
             <button
               onClick={closeDrawer}
-              className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
+              style={{ padding: 6, color: 'var(--ink-3)', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer', transition: 'color 120ms' }}
+              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink)')}
+              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-3)')}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -205,19 +241,24 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-stone-200 dark:border-stone-700 px-4">
+        {/* Tabs — underline style */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', padding: '0 20px' }}>
           {(['details', 'comments', 'activity'] as DrawerTab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 capitalize transition-colors ${
-                tab === t ? 'border-rose-400 text-rose-600' : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-200'
-              }`}
+              style={{
+                padding: '11px 16px', fontSize: 13, fontWeight: 500,
+                background: 'none', border: 'none', cursor: 'pointer',
+                borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+                color: tab === t ? 'var(--accent-ink)' : 'var(--ink-3)',
+                transition: 'color 120ms, border-color 120ms',
+                marginBottom: -1,
+              }}
             >
-              {t === 'details' ? d.details : t === 'comments' ? d.comments : d.activity}
+              {TAB_LABELS[t]}
               {t === 'comments' && comments && comments.length > 0 && (
-                <span className="ml-1.5 bg-stone-100 text-stone-500 text-xs px-1.5 py-0.5 rounded-full">
+                <span style={{ marginLeft: 6, background: 'var(--bg-soft)', color: 'var(--ink-4)', fontSize: 11, padding: '1px 6px', borderRadius: 999 }}>
                   {comments.length}
                 </span>
               )}
@@ -226,24 +267,27 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
 
           {/* ── Details ── */}
           {tab === 'details' && (
-            <div className="p-5 space-y-5">
-              {/* Status */}
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* Status — segmented control */}
               <div>
-                <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{d.status}</label>
-                <div className="flex gap-2">
-                  {STATUS_OPTS.map((opt) => (
+                <label style={fieldLabel}>{d.status}</label>
+                <div style={{ display: 'flex', gap: 0, border: '1px solid var(--line)', borderRadius: 10, overflow: 'hidden' }}>
+                  {STATUS_OPTS.map((opt, i) => (
                     <button
                       key={opt.value}
                       onClick={() => push({ status: opt.value })}
-                      className={`flex-1 py-2 text-xs font-medium rounded-xl border transition-all ${
-                        task.status === opt.value
-                          ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-400'
-                          : 'border-stone-200 dark:border-stone-600 text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-stone-700'
-                      }`}
+                      style={{
+                        flex: 1, padding: '8px 4px', fontSize: 12, fontWeight: 500,
+                        border: 'none', borderInlineStart: i > 0 ? '1px solid var(--line)' : 'none',
+                        cursor: 'pointer', transition: 'all 120ms',
+                        background: task.status === opt.value ? 'var(--accent-soft)' : 'transparent',
+                        color: task.status === opt.value ? 'var(--accent-ink)' : 'var(--ink-3)',
+                      }}
                     >
                       {opt.label}
                     </button>
@@ -253,11 +297,11 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
 
               {/* Priority */}
               <div>
-                <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{d.priority}</label>
+                <label style={fieldLabel}>{d.priority}</label>
                 <select
                   value={task.priority ?? 3}
                   onChange={(e) => push({ priority: Number(e.target.value) })}
-                  className={inputCls}
+                  style={inputStyle}
                 >
                   {PRIORITY_OPTS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -267,54 +311,42 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
 
               {/* Due date */}
               <div>
-                <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{d.dueDate}</label>
+                <label style={fieldLabel}>{d.dueDate}</label>
                 <input
                   type="date"
                   value={task.due_date ?? ''}
                   onChange={(e) => push({ due_date: e.target.value || null })}
-                  className={inputCls}
+                  style={inputStyle}
                 />
               </div>
 
               {/* Cost */}
               <div>
-                <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{d.budget}</label>
-                <div className="grid grid-cols-2 gap-2">
+                <label style={fieldLabel}>{d.budget}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <div>
-                    <p className="text-xs text-stone-400 mb-1">{d.estimatedCost}</p>
+                    <p style={{ fontSize: 11, color: 'var(--ink-4)', marginBottom: 4 }}>{d.estimatedCost}</p>
                     <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
+                      type="number" min="0" step="1" placeholder="0"
                       value={localEstimated}
                       onChange={(e) => setLocalEstimated(e.target.value)}
-                      onBlur={() => {
-                        const val = localEstimated === '' ? null : Number(localEstimated)
-                        push({ estimated_cost: val })
-                      }}
-                      className={inputCls}
+                      onBlur={() => push({ estimated_cost: localEstimated === '' ? null : Number(localEstimated) })}
+                      style={inputStyle}
                     />
                   </div>
                   <div>
-                    <p className="text-xs text-stone-400 mb-1">{d.actualCost}</p>
+                    <p style={{ fontSize: 11, color: 'var(--ink-4)', marginBottom: 4 }}>{d.actualCost}</p>
                     <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
+                      type="number" min="0" step="1" placeholder="0"
                       value={localActual}
                       onChange={(e) => setLocalActual(e.target.value)}
-                      onBlur={() => {
-                        const val = localActual === '' ? null : Number(localActual)
-                        push({ actual_cost: val })
-                      }}
-                      className={inputCls}
+                      onBlur={() => push({ actual_cost: localActual === '' ? null : Number(localActual) })}
+                      style={inputStyle}
                     />
                   </div>
                 </div>
                 {task.estimated_cost != null && task.actual_cost != null && (
-                  <p className={`text-xs mt-1.5 font-medium ${task.actual_cost > task.estimated_cost ? 'text-rose-500' : 'text-emerald-600'}`}>
+                  <p style={{ fontSize: 12, marginTop: 6, fontWeight: 500, color: task.actual_cost > task.estimated_cost ? 'var(--bad)' : 'var(--ok)' }}>
                     {task.actual_cost > task.estimated_cost
                       ? `$${(task.actual_cost - task.estimated_cost).toLocaleString()} ${d.overBudget}`
                       : `$${(task.estimated_cost - task.actual_cost).toLocaleString()} ${d.remaining}`}
@@ -322,62 +354,71 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                 )}
               </div>
 
-              {/* Description */}
+              {/* Notes */}
               <div>
-                <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{d.notes}</label>
+                <label style={fieldLabel}>{d.notes}</label>
                 <textarea
                   rows={4}
                   value={localDesc}
                   onChange={(e) => setLocalDesc(e.target.value)}
                   onBlur={() => push({ description: localDesc || null })}
                   placeholder={d.notesPlaceholder}
-                  className={`${inputCls} resize-none`}
+                  style={{ ...inputStyle, resize: 'none' }}
                 />
               </div>
 
               {/* Meta */}
-              <div className="pt-2 border-t border-stone-100 dark:border-stone-700 text-xs text-stone-400 space-y-1">
-                <p>{d.created} {new Date(task.created_at).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                <p>{d.lastUpdated} {new Date(task.updated_at).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+              <div style={{ paddingTop: 12, borderTop: '1px solid var(--line-soft)' }}>
+                <p className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)', marginBottom: 2 }}>
+                  {d.created} {new Date(task.created_at).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+                <p className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>
+                  {d.lastUpdated} {new Date(task.updated_at).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
               </div>
             </div>
           )}
 
           {/* ── Comments ── */}
           {tab === 'comments' && (
-            <div className="flex flex-col h-full">
-              <div className="flex-1 p-5 space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {!comments?.length ? (
-                  <p className="text-center text-stone-400 text-sm py-10">{d.noComments}</p>
+                  <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, paddingTop: 40 }}>{d.noComments}</p>
                 ) : (
                   comments.map((c) => (
-                    <div key={c.id} className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center text-rose-600 dark:text-rose-400 text-xs font-bold flex-shrink-0">
+                    <div key={c.id} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 999, flexShrink: 0,
+                        background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, fontWeight: 700,
+                      }}>
                         {initials(c.author.name)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">{c.author.name ?? 'Unknown'}</span>
-                          <span className="text-xs text-stone-400">{relativeTime(c.created_at)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{c.author.name ?? 'Unknown'}</span>
+                          <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{relativeTime(c.created_at)}</span>
                         </div>
-                        <p className="text-sm text-stone-600 dark:text-stone-300 mt-0.5 whitespace-pre-wrap">{c.text}</p>
+                        <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 2, whiteSpace: 'pre-wrap' }}>{c.text}</p>
                       </div>
                     </div>
                   ))
                 )}
               </div>
 
-              <form onSubmit={submitComment} className="p-4 border-t border-stone-200 dark:border-stone-700 flex gap-2">
+              <form onSubmit={submitComment} style={{ padding: 16, borderTop: '1px solid var(--line)', display: 'flex', gap: 8 }}>
                 <input
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder={d.commentPlaceholder}
-                  className="flex-1 px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 text-stone-700 dark:text-stone-200 text-sm placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all"
+                  style={{ ...inputStyle, flex: 1, width: 'auto' }}
                 />
                 <button
                   type="submit"
                   disabled={!newComment.trim() || addComment.isPending}
-                  className="px-4 py-2 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-200 text-white text-sm font-medium rounded-xl transition-colors"
+                  style={{ padding: '9px 16px', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 500, borderRadius: 10, border: 'none', cursor: 'pointer', opacity: (!newComment.trim() || addComment.isPending) ? 0.5 : 1, transition: 'opacity 120ms' }}
                 >
                   {d.send}
                 </button>
@@ -387,22 +428,27 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
 
           {/* ── Activity ── */}
           {tab === 'activity' && (
-            <div className="p-5">
+            <div style={{ padding: 20 }}>
               {!activity?.length ? (
-                <p className="text-center text-stone-400 text-sm py-10">{d.noActivity}</p>
+                <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, paddingTop: 40 }}>{d.noActivity}</p>
               ) : (
-                <div className="space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {activity.map((item) => (
-                    <div key={item.id} className="flex gap-3">
-                      <div className="w-7 h-7 rounded-full bg-stone-100 dark:bg-stone-700 flex items-center justify-center text-stone-500 dark:text-stone-300 text-xs font-semibold flex-shrink-0 mt-0.5">
+                    <div key={item.id} style={{ display: 'flex', gap: 12 }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: 999, flexShrink: 0,
+                        background: 'var(--bg-soft)', color: 'var(--ink-3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 600, marginTop: 2,
+                      }}>
                         {initials(item.actor.name)}
                       </div>
                       <div>
-                        <p className="text-sm text-stone-600 dark:text-stone-300">
-                          <span className="font-semibold text-stone-700 dark:text-stone-200">{item.actor.name ?? 'Someone'}</span>
+                        <p style={{ fontSize: 13, color: 'var(--ink-2)' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{item.actor.name ?? 'Someone'}</span>
                           {' '}{actionSummary(item.action, item.old_value, item.new_value)}
                         </p>
-                        <p className="text-xs text-stone-400 mt-0.5">{relativeTime(item.created_at)}</p>
+                        <p className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 2 }}>{relativeTime(item.created_at)}</p>
                       </div>
                     </div>
                   ))}

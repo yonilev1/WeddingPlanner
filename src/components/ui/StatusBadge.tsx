@@ -4,18 +4,28 @@ interface Props {
   status: TaskStatus
 }
 
-const CONFIG: Record<TaskStatus, { label: string; dot: string; classes: string }> = {
-  todo:        { label: 'Not Started', dot: 'bg-stone-400',   classes: 'bg-stone-100 text-stone-500' },
-  in_progress: { label: 'In Progress', dot: 'bg-blue-500',    classes: 'bg-blue-100 text-blue-600' },
-  done:        { label: 'Done',         dot: 'bg-emerald-500', classes: 'bg-emerald-100 text-emerald-700' },
+const TONES: Record<TaskStatus, { bg: string; color: string; border: string }> = {
+  todo:        { bg: 'transparent',        color: 'var(--ink-3)',      border: 'var(--line)' },
+  in_progress: { bg: 'var(--accent-soft)', color: 'var(--accent-ink)', border: 'var(--accent-soft)' },
+  done:        { bg: 'var(--ok-soft)',      color: 'var(--ok)',         border: 'var(--ok-soft)' },
+}
+
+const LABELS: Record<TaskStatus, string> = {
+  todo: 'To do',
+  in_progress: 'In progress',
+  done: 'Done',
 }
 
 export function StatusBadge({ status }: Props) {
-  const { label, dot, classes } = CONFIG[status] ?? CONFIG.todo
+  const t = TONES[status] ?? TONES.todo
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${classes}`}>
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
-      {label}
+    <span style={{
+      display: 'inline-flex', alignItems: 'center',
+      padding: '2px 8px', fontSize: 11, fontWeight: 500, letterSpacing: '0.01em', lineHeight: 1.4,
+      borderRadius: 999, background: t.bg, color: t.color,
+      border: `1px solid ${t.border}`, whiteSpace: 'nowrap',
+    }}>
+      {LABELS[status]}
     </span>
   )
 }

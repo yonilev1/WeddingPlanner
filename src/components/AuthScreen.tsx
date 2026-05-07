@@ -17,10 +17,6 @@ export function AuthScreen({ onSuccess }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const inputCls =
-    'w-full px-4 py-2.5 rounded-xl border border-stone-300 text-stone-800 placeholder-stone-400 ' +
-    'focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all text-sm'
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -45,26 +41,95 @@ export function AuthScreen({ onSuccess }: Props) {
 
   const switchTab = (t: typeof tab) => { setTab(t); setError(null) }
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '10px 14px', fontSize: 14, borderRadius: 10,
+    border: '1px solid var(--line)', background: 'var(--bg)', color: 'var(--ink)',
+    outline: 'none', transition: 'border-color 120ms', boxSizing: 'border-box',
+  }
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--ink-2)', marginBottom: 6,
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-stone-50 to-amber-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-stone-200 flex items-center justify-center text-3xl mx-auto mb-4">
-            💍
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex' }}>
+
+      {/* Left stripe — decorative panel */}
+      <div
+        className="hidden md:flex"
+        style={{
+          width: '42%', flexShrink: 0,
+          background: 'var(--bg-card)',
+          borderInlineEnd: '1px solid var(--line)',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '60px 48px',
+        }}
+      >
+        {/* Brand */}
+        <div style={{ marginBottom: 48, textAlign: 'center' }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 12,
+            background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 20px',
+          }}>
+            <span className="font-display" style={{ fontSize: 28, color: '#fff', lineHeight: 1 }}>e</span>
           </div>
-          <h1 className="text-2xl font-serif font-semibold text-stone-800">{a.title}</h1>
-          <p className="text-stone-500 text-sm mt-1">{a.subtitle}</p>
+          <p className="font-display" style={{ fontSize: 28, color: 'var(--ink)', lineHeight: 1.1 }}>everafter</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
-          <div className="flex gap-1 bg-stone-100 rounded-xl p-1 mb-7">
+        {/* Couple name placeholder */}
+        <div style={{ textAlign: 'center' }}>
+          <p className="font-display" style={{ fontSize: 'clamp(32px, 3.5vw, 48px)', color: 'var(--ink)', lineHeight: 1.1, marginBottom: 16 }}>
+            Your day,<br />
+            <span style={{ fontStyle: 'italic', color: 'var(--accent)' }}>perfectly</span> planned.
+          </p>
+          <p style={{ fontSize: 14, color: 'var(--ink-3)', maxWidth: 260, margin: '0 auto', lineHeight: 1.6 }}>
+            Every task, every detail, every moment — all in one place.
+          </p>
+        </div>
+
+        {/* Subtle decoration */}
+        <div style={{ position: 'absolute', bottom: 40, fontSize: 11, color: 'var(--ink-4)', letterSpacing: '0.06em', fontFamily: 'var(--font-mono, monospace)', textTransform: 'uppercase' }}>
+          everafter · wedding planner
+        </div>
+      </div>
+
+      {/* Right — form */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+
+          {/* Mobile brand */}
+          <div className="flex md:hidden" style={{ justifyContent: 'center', marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="font-display" style={{ fontSize: 20, color: '#fff' }}>e</span>
+              </div>
+              <span className="font-display" style={{ fontSize: 22, color: 'var(--ink)' }}>everafter</span>
+            </div>
+          </div>
+
+          <h1 className="font-display" style={{ fontSize: 28, color: 'var(--ink)', marginBottom: 4 }}>
+            {tab === 'signin' ? a.signIn : a.createAccount}
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--ink-3)', marginBottom: 32 }}>
+            {a.subtitle}
+          </p>
+
+          {/* Tab toggle */}
+          <div style={{ display: 'flex', gap: 0, background: 'var(--bg-soft)', borderRadius: 10, padding: 4, marginBottom: 28 }}>
             {(['signin', 'signup'] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => switchTab(t)}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                  tab === t ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500 hover:text-stone-700'
-                }`}
+                style={{
+                  flex: 1, padding: '8px 0', fontSize: 13, fontWeight: 500,
+                  borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 120ms',
+                  background: tab === t ? 'var(--bg-card)' : 'transparent',
+                  color: tab === t ? 'var(--ink)' : 'var(--ink-3)',
+                  boxShadow: tab === t ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                }}
               >
                 {t === 'signin' ? a.signIn : a.createAccount}
               </button>
@@ -72,36 +137,70 @@ export function AuthScreen({ onSuccess }: Props) {
           </div>
 
           {tab === 'signin' ? (
-            <form onSubmit={handleSignIn} className="space-y-4">
+            <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">{a.email}</label>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder={a.emailPlaceholder} />
+                <label style={labelStyle}>{a.email}</label>
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} placeholder={a.emailPlaceholder}
+                  onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--accent)')}
+                  onBlur={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--line)')}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">{a.password}</label>
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="••••••••" />
+                <label style={labelStyle}>{a.password}</label>
+                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} placeholder="••••••••"
+                  onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--accent)')}
+                  onBlur={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--line)')}
+                />
               </div>
-              {error && <p className="text-rose-600 text-sm bg-rose-50 border border-rose-200 px-3 py-2.5 rounded-xl">{error}</p>}
-              <button type="submit" disabled={loading} className="w-full py-2.5 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white font-medium rounded-xl transition-colors mt-2">
+              {error && (
+                <p style={{ fontSize: 13, color: 'var(--bad)', background: 'var(--bad-soft)', border: '1px solid var(--bad-soft)', padding: '10px 12px', borderRadius: 10 }}>
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                style={{ width: '100%', padding: '11px 0', background: 'var(--accent)', color: '#fff', fontWeight: 500, fontSize: 14, borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, marginTop: 4, transition: 'opacity 120ms' }}
+              >
                 {loading ? a.signingIn : a.signIn}
               </button>
             </form>
           ) : (
-            <form onSubmit={handleSignUp} className="space-y-4">
+            <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">{a.yourName}</label>
-                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} placeholder={a.namePlaceholder} />
+                <label style={labelStyle}>{a.yourName}</label>
+                <input type="text" required value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder={a.namePlaceholder}
+                  onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--accent)')}
+                  onBlur={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--line)')}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">{a.email}</label>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} placeholder={a.emailPlaceholder} />
+                <label style={labelStyle}>{a.email}</label>
+                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} placeholder={a.emailPlaceholder}
+                  onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--accent)')}
+                  onBlur={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--line)')}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1.5">{a.password} <span className="text-stone-400 font-normal">{a.passwordHint}</span></label>
-                <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="••••••••" />
+                <label style={labelStyle}>
+                  {a.password}
+                  {a.passwordHint && <span style={{ color: 'var(--ink-4)', fontWeight: 400 }}> {a.passwordHint}</span>}
+                </label>
+                <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} style={inputStyle} placeholder="••••••••"
+                  onFocus={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--accent)')}
+                  onBlur={e => ((e.target as HTMLInputElement).style.borderColor = 'var(--line)')}
+                />
               </div>
-              {error && <p className="text-rose-600 text-sm bg-rose-50 border border-rose-200 px-3 py-2.5 rounded-xl">{error}</p>}
-              <button type="submit" disabled={loading} className="w-full py-2.5 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white font-medium rounded-xl transition-colors mt-2">
+              {error && (
+                <p style={{ fontSize: 13, color: 'var(--bad)', background: 'var(--bad-soft)', border: '1px solid var(--bad-soft)', padding: '10px 12px', borderRadius: 10 }}>
+                  {error}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={loading}
+                style={{ width: '100%', padding: '11px 0', background: 'var(--accent)', color: '#fff', fontWeight: 500, fontSize: 14, borderRadius: 10, border: 'none', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1, marginTop: 4, transition: 'opacity 120ms' }}
+              >
                 {loading ? a.creatingAccount : a.createAccount}
               </button>
             </form>

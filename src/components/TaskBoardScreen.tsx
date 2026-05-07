@@ -91,7 +91,8 @@ function DragHandle({ listeners, attributes }: { listeners?: Listeners; attribut
     <span
       {...listeners}
       {...attributes}
-      className="cursor-grab active:cursor-grabbing text-stone-300 hover:text-stone-500 dark:text-stone-600 dark:hover:text-stone-400 flex-shrink-0 touch-none select-none px-0.5"
+      className="cursor-grab active:cursor-grabbing flex-shrink-0 touch-none select-none px-0.5"
+      style={{ color: 'var(--line)' }}
       title="Drag to reorder"
     >
       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -140,19 +141,22 @@ function SortableSubtaskRow({
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-700/50 group cursor-pointer transition-colors"
+      style={{ ...style, borderTop: '1px solid var(--line-soft)' }}
+      className="flex items-center gap-2 px-3 py-2.5 rounded-lg group cursor-pointer transition-colors"
+      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
+      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
       onClick={() => openDrawer(task.id)}
     >
       {!filtersActive && <DragHandle listeners={listeners} attributes={attributes} />}
 
       <button
         onClick={toggle}
-        className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
-          task.status === 'done'
-            ? 'bg-emerald-500 border-emerald-500'
-            : 'border-stone-300 dark:border-stone-600 hover:border-rose-400 bg-white dark:bg-stone-700'
-        }`}
+        style={{
+          width: 18, height: 18, borderRadius: 999, flexShrink: 0,
+          border: task.status === 'done' ? 'none' : '1.5px solid var(--ink-4)',
+          background: task.status === 'done' ? 'var(--ink)' : 'transparent',
+          display: 'grid', placeItems: 'center', cursor: 'pointer', padding: 0, transition: 'all 120ms',
+        }}
       >
         {task.status === 'done' && (
           <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -162,11 +166,11 @@ function SortableSubtaskRow({
       </button>
 
       <span
-        className={`flex-1 text-sm min-w-0 truncate ${
-          task.status === 'done'
-            ? 'line-through text-stone-400'
-            : 'text-stone-700 dark:text-stone-200'
-        }`}
+        style={{
+          flex: 1, fontSize: 14, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          color: task.status === 'done' ? 'var(--ink-4)' : 'var(--ink-2)',
+          textDecoration: task.status === 'done' ? 'line-through' : 'none',
+        }}
       >
         {task.title}
       </span>
@@ -174,11 +178,11 @@ function SortableSubtaskRow({
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
         <PriorityBadge priority={task.priority} />
         {task.due_date && (
-          <span className={`text-xs font-medium ${overdue ? 'text-rose-500' : 'text-stone-400'}`}>
+          <span className="font-mono-ui" style={{ fontSize: 12, color: overdue ? 'var(--bad)' : 'var(--ink-4)' }}>
             {overdue ? '⚠ ' : ''}{formatDate(task.due_date)}
           </span>
         )}
-        <svg className="w-3.5 h-3.5 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg style={{ color: 'var(--ink-4)' }} className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>
@@ -254,41 +258,44 @@ function TaskCard({
   }
 
   return (
-    <div className="bg-white dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 overflow-hidden transition-shadow hover:shadow-sm">
+    <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--line)', overflow: 'hidden' }}>
       {/* Header */}
       <div
-        className="flex items-center gap-3 p-4 cursor-pointer select-none"
+        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, cursor: 'pointer', userSelect: 'none' }}
         onClick={() => toggleExpanded(category.id)}
       >
         <svg
-          className={`w-4 h-4 text-stone-400 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+          style={{ color: 'var(--ink-4)', flexShrink: 0, transition: 'transform 200ms', transform: isExpanded ? 'rotate(90deg)' : 'none' }}
+          className="w-4 h-4"
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button
-              className="font-semibold text-stone-800 dark:text-stone-100 hover:text-rose-600 transition-colors text-left"
+              style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'start', transition: 'color 120ms' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink)')}
               onClick={(e) => { e.stopPropagation(); openDrawer(category.id) }}
             >
               {categoryDisplayTitle}
             </button>
             <PriorityBadge priority={category.priority} />
           </div>
-          <div className="flex items-center gap-2 mt-1.5">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
             <ProgressBar value={prog.percent} className="w-24" />
-            <span className="text-xs text-stone-400">{prog.done}/{prog.total}</span>
+            <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{prog.done}/{prog.total}</span>
             {prog.percent === 100 && prog.total > 0 && (
-              <span className="text-xs text-emerald-500 font-medium">{tr.board.complete}</span>
+              <span style={{ fontSize: 11, color: 'var(--ok)', fontWeight: 500 }}>{tr.board.complete}</span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {category.due_date && (
-            <span className="text-xs text-stone-400 hidden sm:block">{formatDate(category.due_date)}</span>
+            <span className="font-mono-ui hidden sm:block" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{formatDate(category.due_date)}</span>
           )}
           <StatusBadge status={category.status} />
         </div>
@@ -296,11 +303,11 @@ function TaskCard({
 
       {/* Subtasks */}
       {isExpanded && (
-        <div className="border-t border-stone-100 dark:border-stone-700 p-2">
+        <div style={{ borderTop: '1px solid var(--line-soft)', padding: 8 }}>
           {subtasksToShow.length === 0 && !isAddingHere ? (
-            <div className="flex flex-col items-center py-6 gap-2">
-              <p className="text-xl">✅</p>
-              <p className="text-sm text-stone-400 dark:text-stone-500">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0', gap: 8 }}>
+              <p style={{ fontSize: 20 }}>✅</p>
+              <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>
                 {filtersActive
                   ? tr.board.noSubtasksFiltered
                   : tr.board.noTasksYet}
@@ -308,7 +315,7 @@ function TaskCard({
               {!filtersActive && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setAddingTaskToCategoryId(category.id) }}
-                  className="text-xs text-rose-500 hover:text-rose-600 font-medium mt-1 transition-colors"
+                  style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', marginTop: 4, transition: 'opacity 120ms' }}
                 >
                   {tr.board.addTask}
                 </button>
@@ -345,11 +352,11 @@ function TaskCard({
                   }
                 }}
                 placeholder={tr.board.taskPlaceholder}
-                className="flex-1 px-3 py-2 text-sm rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-800 dark:text-stone-100 text-stone-700 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                style={{ flex: 1, padding: '7px 12px', fontSize: 14, borderRadius: 10, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--ink)', outline: 'none' }}
               />
               <button
                 type="submit"
-                className="px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white text-sm font-medium rounded-xl transition-colors"
+                style={{ padding: '7px 14px', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 500, borderRadius: 10, border: 'none', cursor: 'pointer', transition: 'opacity 120ms' }}
               >
                 {tr.board.add}
               </button>
@@ -369,7 +376,9 @@ function TaskCard({
           {!isAddingHere && subtasksToShow.length > 0 && !filtersActive && (
             <button
               onClick={(e) => { e.stopPropagation(); setAddingTaskToCategoryId(category.id) }}
-              className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-stone-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-xl transition-colors mt-0.5"
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', fontSize: 12, color: 'var(--ink-4)', background: 'transparent', border: 'none', borderRadius: 10, cursor: 'pointer', marginTop: 2, transition: 'color 120ms' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink-4)'; (e.currentTarget as HTMLElement).style.background = 'transparent' }}
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -412,19 +421,23 @@ function SortableCategoryItem({
       {!filtersActive && <DragHandle listeners={listeners} attributes={attributes} />}
       <button
         onClick={onClick}
-        className={`flex-1 text-left px-3 py-2.5 rounded-xl transition-all border ${
-          active
-            ? 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400'
-            : 'border-transparent text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 hover:text-stone-800 dark:hover:text-stone-100'
-        }`}
+        style={{
+          flex: 1, textAlign: 'start', padding: '10px 12px', borderRadius: 10, transition: 'all 120ms',
+          border: active ? '1px solid var(--accent-soft)' : '1px solid transparent',
+          background: active ? 'var(--accent-soft)' : 'transparent',
+          color: active ? 'var(--accent-ink)' : 'var(--ink-3)',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)'; (e.currentTarget as HTMLElement).style.color = 'var(--ink)' } }}
+        onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--ink-3)' } }}
       >
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-sm font-medium truncate">{displayTitle}</span>
-          <span className={`text-xs flex-shrink-0 ${active ? 'text-rose-500' : 'text-stone-400'}`}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+          <span style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTitle}</span>
+          <span className="font-mono-ui" style={{ fontSize: 11, flexShrink: 0, color: active ? 'var(--accent-ink)' : 'var(--ink-4)' }}>
             {p.done}/{p.total}
           </span>
         </div>
-        <ProgressBar value={p.percent} className="mt-1.5" color={active ? 'bg-rose-400' : 'bg-stone-400'} />
+        <ProgressBar value={p.percent} className="mt-1.5" />
       </button>
     </div>
   )
@@ -438,10 +451,11 @@ function FilterBar() {
   const active = hasActiveFilters()
   const tr = useTranslation()
 
-  const inputCls =
-    'px-3 py-1.5 text-sm rounded-xl border border-stone-200 dark:border-stone-600 ' +
-    'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-200 ' +
-    'focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all'
+  const inputStyle = {
+    padding: '6px 12px', fontSize: 13, borderRadius: 10,
+    border: '1px solid var(--line)', background: 'var(--bg-card)', color: 'var(--ink)',
+    outline: 'none', transition: 'border-color 120ms',
+  }
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -459,7 +473,7 @@ function FilterBar() {
           placeholder={tr.board.searchPlaceholder}
           value={filters.searchQuery}
           onChange={(e) => setFilter('searchQuery', e.target.value)}
-          className={`${inputCls} pl-8 w-full`}
+          style={{ ...inputStyle, paddingLeft: 32, width: '100%' }}
         />
       </div>
 
@@ -467,7 +481,7 @@ function FilterBar() {
       <select
         value={filters.filterStatus}
         onChange={(e) => setFilter('filterStatus', e.target.value as TaskStatus | 'all')}
-        className={inputCls}
+        style={inputStyle}
       >
         <option value="all">{tr.board.anyStatus}</option>
         <option value="todo">{tr.board.notStarted}</option>
@@ -481,7 +495,7 @@ function FilterBar() {
         onChange={(e) =>
           setFilter('filterPriority', e.target.value === 'all' ? 'all' : Number(e.target.value))
         }
-        className={inputCls}
+        style={inputStyle}
       >
         <option value="all">{tr.board.anyPriority}</option>
         <option value="5">{tr.drawer.p5Label}</option>
@@ -494,7 +508,7 @@ function FilterBar() {
       {/* Date range toggle */}
       <button
         onClick={() => setShowDateRange((v) => !v)}
-        className={`${inputCls} flex items-center gap-1.5 ${showDateRange ? 'border-rose-300 text-rose-600' : ''}`}
+        style={{ ...inputStyle, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', borderColor: showDateRange ? 'var(--accent)' : undefined, color: showDateRange ? 'var(--accent-ink)' : undefined }}
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -508,15 +522,15 @@ function FilterBar() {
             type="date"
             value={filters.filterDueDateFrom ?? ''}
             onChange={(e) => setFilter('filterDueDateFrom', e.target.value || null)}
-            className={inputCls}
+            style={inputStyle}
             title="Due date from"
           />
-          <span className="text-stone-400 text-sm">–</span>
+          <span style={{ color: 'var(--ink-4)', fontSize: 13 }}>–</span>
           <input
             type="date"
             value={filters.filterDueDateTo ?? ''}
             onChange={(e) => setFilter('filterDueDateTo', e.target.value || null)}
-            className={inputCls}
+            style={inputStyle}
             title="Due date to"
           />
         </>
@@ -525,7 +539,7 @@ function FilterBar() {
       {active && (
         <button
           onClick={clearFilters}
-          className="px-3 py-1.5 text-sm text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl border border-rose-200 transition-colors font-medium"
+          style={{ ...inputStyle, color: 'var(--accent-ink)', borderColor: 'var(--accent-soft)', background: 'var(--accent-soft)', fontWeight: 500, cursor: 'pointer' }}
         >
           {tr.board.clear}
         </button>
@@ -719,7 +733,7 @@ export function TaskBoardScreen({ wedding }: Props) {
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center h-64 text-stone-400 dark:text-stone-500 text-sm">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 256, color: 'var(--ink-3)', fontSize: 13 }}>
         {tr.common.loading}
       </div>
     )
@@ -750,15 +764,15 @@ export function TaskBoardScreen({ wedding }: Props) {
           <aside
             className={`
               fixed md:static inset-y-0 start-0 z-30
-              w-72 flex-shrink-0 border-e border-stone-200 dark:border-stone-700
-              bg-white dark:bg-stone-900
+              w-72 flex-shrink-0
               flex flex-col overflow-hidden
               transition-transform duration-200
               ${sidebarOpen ? 'translate-x-0' : 'max-md:ltr:-translate-x-full max-md:rtl:translate-x-full'}
             `}
+            style={{ borderInlineEnd: '1px solid var(--line)', background: 'var(--bg-card)' }}
           >
             <div className="flex items-center justify-between px-3 pt-3 pb-1 flex-shrink-0">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider px-2">{tr.board.categories}</p>
+              <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '0 8px' }}>{tr.board.categories}</p>
               <button
                 className="md:hidden p-1 text-stone-400 hover:text-stone-600"
                 onClick={() => setSidebarOpen(false)}
@@ -796,9 +810,9 @@ export function TaskBoardScreen({ wedding }: Props) {
             </div>
 
             {/* Add category footer */}
-            <div className="px-3 pb-3 pt-2 border-t border-stone-200 dark:border-stone-700 flex-shrink-0">
+            <div style={{ padding: '8px 12px 12px', borderTop: '1px solid var(--line)', flexShrink: 0 }}>
               {addingCategory ? (
-                <form onSubmit={(e) => { e.preventDefault(); submitNewCategory() }} className="flex items-center gap-1.5">
+                <form onSubmit={(e) => { e.preventDefault(); submitNewCategory() }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <input
                     autoFocus
                     value={newCategoryTitle}
@@ -811,14 +825,16 @@ export function TaskBoardScreen({ wedding }: Props) {
                       }
                     }}
                     placeholder={tr.board.categoryPlaceholder}
-                    className="flex-1 px-2.5 py-1.5 text-sm rounded-xl border border-rose-300 bg-rose-50 dark:bg-rose-900/20 dark:border-rose-700 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                    style={{ flex: 1, padding: '6px 10px', fontSize: 13, borderRadius: 10, border: '1px solid var(--accent)', background: 'var(--accent-soft)', color: 'var(--ink)', outline: 'none' }}
                   />
-                  <button type="submit" className="px-2.5 py-1.5 bg-rose-500 text-white text-xs font-medium rounded-xl">{tr.board.add}</button>
+                  <button type="submit" style={{ padding: '6px 12px', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 500, borderRadius: 10, border: 'none', cursor: 'pointer' }}>{tr.board.add}</button>
                 </form>
               ) : (
                 <button
                   onClick={() => setAddingCategory(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-stone-500 dark:text-stone-400 hover:text-rose-600 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors"
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', fontSize: 13, color: 'var(--ink-3)', background: 'none', border: 'none', borderRadius: 10, cursor: 'pointer', transition: 'color 120ms' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accent-soft)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink-3)'; (e.currentTarget as HTMLElement).style.background = 'none' }}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -846,25 +862,25 @@ export function TaskBoardScreen({ wedding }: Props) {
                 </button>
 
                 {/* Title */}
-                <div className="flex-1 min-w-0">
+                <div style={{ flex: 1, minWidth: 0 }}>
                   {filtersActive ? (
-                    <h2 className="text-lg font-serif font-semibold text-stone-800 dark:text-stone-100">{tr.board.searchResults}</h2>
+                    <h2 className="font-display" style={{ fontSize: 22, color: 'var(--ink)' }}>{tr.board.searchResults}</h2>
                   ) : selectedCategory ? (
                     <>
-                      <h2 className="text-lg sm:text-xl font-serif font-semibold text-stone-800 dark:text-stone-100 truncate">
+                      <h2 className="font-display" style={{ fontSize: 22, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {selectedCategoryTitle}
                       </h2>
                       {(() => {
                         const p = categoryProgress(selectedCategory)
                         return (
-                          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                          <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 2 }}>
                             {p.done} {tr.board.of} {p.total} {tr.board.subtasksComplete}
                           </p>
                         )
                       })()}
                     </>
                   ) : (
-                    <h2 className="text-lg font-serif font-semibold text-stone-800 dark:text-stone-100">{tr.board.weddingTasks}</h2>
+                    <h2 className="font-display" style={{ fontSize: 22, color: 'var(--ink)' }}>{tr.board.weddingTasks}</h2>
                   )}
                 </div>
 
@@ -872,7 +888,9 @@ export function TaskBoardScreen({ wedding }: Props) {
                 <button
                   onClick={() => setPrintViewOpen(true)}
                   title="Print / Export PDF"
-                  className="p-2 text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors"
+                  style={{ padding: 8, color: 'var(--ink-4)', background: 'none', border: 'none', borderRadius: 10, cursor: 'pointer', transition: 'color 120ms, background 120ms' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--ink-4)'; (e.currentTarget as HTMLElement).style.background = 'none' }}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -880,11 +898,11 @@ export function TaskBoardScreen({ wedding }: Props) {
                 </button>
 
                 {/* View mode toggle */}
-                <div className="flex items-center gap-0.5 bg-stone-100 dark:bg-stone-700 rounded-xl p-1 flex-shrink-0">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-soft)', borderRadius: 10, padding: 4, flexShrink: 0 }}>
                   <button
                     onClick={() => setViewMode('list')}
                     title="List view"
-                    className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-stone-600 shadow-sm text-stone-700 dark:text-stone-100' : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'}`}
+                    style={{ padding: 6, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 120ms', background: viewMode === 'list' ? 'var(--bg-card)' : 'transparent', color: viewMode === 'list' ? 'var(--ink)' : 'var(--ink-4)' }}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -893,7 +911,7 @@ export function TaskBoardScreen({ wedding }: Props) {
                   <button
                     onClick={() => setViewMode('heatmap')}
                     title="Calendar view"
-                    className={`p-1.5 rounded-lg transition-all ${viewMode === 'heatmap' ? 'bg-white dark:bg-stone-600 shadow-sm text-stone-700 dark:text-stone-100' : 'text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'}`}
+                    style={{ padding: 6, borderRadius: 8, border: 'none', cursor: 'pointer', transition: 'all 120ms', background: viewMode === 'heatmap' ? 'var(--bg-card)' : 'transparent', color: viewMode === 'heatmap' ? 'var(--ink)' : 'var(--ink-4)' }}
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -910,23 +928,25 @@ export function TaskBoardScreen({ wedding }: Props) {
               <HeatmapView categories={categories} />
             ) : categories.length === 0 ? (
               /* No categories yet — full empty state */
-              <div className="flex-1 flex items-center justify-center p-8">
-                <div className="text-center max-w-sm">
-                  <p className="text-6xl mb-4">💐</p>
-                  <h3 className="text-xl font-serif font-semibold text-stone-700 dark:text-stone-200 mb-2">
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+                <div style={{ textAlign: 'center', maxWidth: 360 }}>
+                  <p style={{ fontSize: 48, marginBottom: 16 }}>💐</p>
+                  <h3 className="font-display" style={{ fontSize: 24, color: 'var(--ink)', marginBottom: 8 }}>
                     {tr.board.startPlanning}
                   </h3>
-                  <p className="text-stone-400 dark:text-stone-500 text-sm mb-6">
+                  <p style={{ color: 'var(--ink-3)', fontSize: 14, marginBottom: 24 }}>
                     {tr.board.startPlanningHint}
                   </p>
                   <button
                     onClick={() => setAddingCategory(true)}
-                    className="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-medium rounded-xl transition-colors"
+                    style={{ padding: '10px 24px', background: 'var(--accent)', color: '#fff', fontWeight: 500, borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 14, transition: 'opacity 120ms' }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.85')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
                   >
                     {tr.board.addFirstCategory}
                   </button>
-                  <p className="text-xs text-stone-400 dark:text-stone-600 mt-4">
-                    {tr.board.tipPress} <kbd className="px-1.5 py-0.5 bg-stone-100 dark:bg-stone-700 rounded text-stone-500 font-mono">N</kbd> {tr.board.toAddTasks} · <kbd className="px-1.5 py-0.5 bg-stone-100 dark:bg-stone-700 rounded text-stone-500 font-mono">/</kbd> {tr.board.toSearch}
+                  <p style={{ fontSize: 12, color: 'var(--ink-4)', marginTop: 16 }}>
+                    {tr.board.tipPress} <kbd style={{ padding: '2px 6px', background: 'var(--bg-soft)', borderRadius: 6, color: 'var(--ink-3)', fontFamily: 'monospace', fontSize: 11 }}>N</kbd> {tr.board.toAddTasks} · <kbd style={{ padding: '2px 6px', background: 'var(--bg-soft)', borderRadius: 6, color: 'var(--ink-3)', fontFamily: 'monospace', fontSize: 11 }}>/</kbd> {tr.board.toSearch}
                   </p>
                 </div>
               </div>
@@ -959,7 +979,7 @@ export function TaskBoardScreen({ wedding }: Props) {
         </div>
 
         <DragOverlay>
-          <div className="bg-white dark:bg-stone-700 rounded-xl border border-rose-200 shadow-lg px-4 py-2.5 text-sm font-medium text-stone-700 dark:text-stone-100 opacity-90">
+          <div style={{ background: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--accent-soft)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '10px 16px', fontSize: 14, fontWeight: 500, color: 'var(--ink)', opacity: 0.9 }}>
             {tr.board.moving}
           </div>
         </DragOverlay>

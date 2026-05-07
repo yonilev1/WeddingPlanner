@@ -5,11 +5,21 @@ import { useTranslation } from '../i18n/useTranslation'
 interface Props {
   categories: TaskWithSubtasks[]
   onClose: () => void
+  asPage?: boolean
 }
 
 const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-IL' }
 
-export function BudgetPanel({ categories, onClose }: Props) {
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--ink-3)' }}>
+      <span style={{ width: 10, height: 10, borderRadius: 3, background: color, border: '1px solid var(--line)', flexShrink: 0 }} />
+      {label}
+    </span>
+  )
+}
+
+export function BudgetPanel({ categories, onClose, asPage }: Props) {
   const { openDrawer, language } = useUIStore()
   const tr = useTranslation()
   const b = tr.budget
@@ -18,162 +28,198 @@ export function BudgetPanel({ categories, onClose }: Props) {
     n.toLocaleString(locale, { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
   const catName = (title: string) => (tr.categoryNames as Record<string, string>)[title] ?? title
 
-  type CategoryBudget = {
-    id: string
-    title: string
-    estimated: number
-    actual: number
-    count: number
-  }
-
-  const categoryBudgets: CategoryBudget[] = categories.map((cat) => {
+  const categoryBudgets = categories.map((cat) => {
     const allTasks = [cat, ...(cat.subtasks ?? [])]
     const estimated = allTasks.reduce((sum, t) => sum + (t.estimated_cost ?? 0), 0)
     const actual = allTasks.reduce((sum, t) => sum + (t.actual_cost ?? 0), 0)
-    const count = allTasks.filter((t) => t.estimated_cost != null || t.actual_cost != null).length
-    return { id: cat.id, title: cat.title, estimated, actual, count }
-  }).filter((c) => c.count > 0 || c.estimated > 0 || c.actual > 0)
+    return { id: cat.id, title: cat.title, estimated, actual }
+  }).filter((c) => c.estimated > 0 || c.actual > 0).sort((a, b) => b.estimated - a.estimated)
 
   const totalEstimated = categoryBudgets.reduce((s, c) => s + c.estimated, 0)
   const totalActual = categoryBudgets.reduce((s, c) => s + c.actual, 0)
   const remaining = totalEstimated - totalActual
   const overBudget = remaining < 0
 
-  // All tasks with any cost data for the task list
   const allTasksWithCost = categories.flatMap((cat) =>
-    [cat, ...(cat.subtasks ?? [])].filter((t) => t.estimated_cost != null || t.actual_cost != null)
+    [...(cat.subtasks ?? [])].filter((t) => (t.estimated_cost ?? 0) > 0)
+  ).sort((a, b) => (b.estimated_cost ?? 0) - (a.estimated_cost ?? 0)).slice(0, 8)
+
+  const inner = (
+    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '32px 40px 80px' }}>
+      {/* Page header */}
+      <div style={{ marginBottom: 32 }}>
+        <p className="font-display" style={{ fontSize: 44, lineHeight: 1.1, color: 'var(--ink)' }}>{b.title}</p>
+        <p style={{ color: 'var(--ink-3)', marginTop: 4, fontSize: 14 }}>{b.subtitle}</p>
+      </div>
+
+      {/* Summary tiles */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        background: 'var(--bg-card)', border: '1px solid var(--line)',
+        borderRadius: 16, marginBottom: 32, overflow: 'hidden',
+      }}>
+        {[
+          { label: b.estimated, value: fmt(totalEstimated), tone: 'neutral' },
+          { label: b.spent,     value: fmt(totalActual),    tone: 'neutral' },
+          { label: overBudget ? b.over : b.remaining, value: fmt(Math.abs(remaining)), tone: overBudget ? 'bad' : 'ok' },
+        ].map((tile, i) => (
+          <div key={i} style={{
+            padding: '24px 28px',
+            borderInlineEnd: i < 2 ? '1px solid var(--line)' : 'none',
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+              {tile.label}
+            </p>
+            <p className="font-display" style={{
+              fontSize: 36,
+              color: tile.tone === 'bad' ? 'var(--bad)' : tile.tone === 'ok' ? 'var(--ok)' : 'var(--ink)',
+            }}>{tile.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Stacked bar */}
+      {totalEstimated > 0 && (
+        <div style={{
+          background: 'var(--bg-card)', border: '1px solid var(--line)',
+          borderRadius: 12, padding: 24, marginBottom: 32,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{b.spent} vs. {b.estimated}</p>
+            <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>
+              {fmt(totalActual)} / {fmt(totalEstimated)}
+            </span>
+          </div>
+          <div style={{ position: 'relative', height: 20, background: 'var(--bg-soft)', borderRadius: 999, overflow: 'hidden' }}>
+            <div style={{
+              position: 'absolute', inset: 0,
+              width: `${Math.min(100, 100 * totalEstimated / (totalEstimated || 1))}%`,
+              background: 'var(--accent-soft)', transition: 'width 400ms',
+            }} />
+            <div style={{
+              position: 'absolute', insetBlock: 0, insetInlineStart: 0,
+              width: `${Math.min(100, 100 * totalActual / (totalEstimated || 1))}%`,
+              background: overBudget ? 'var(--bad)' : 'var(--accent)', transition: 'width 400ms',
+            }} />
+          </div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+            <Legend color="var(--accent)" label={b.spent} />
+            <Legend color="var(--accent-soft)" label={b.estimated} />
+          </div>
+        </div>
+      )}
+
+      {/* By category */}
+      {categoryBudgets.length > 0 && (
+        <>
+          <p className="font-display" style={{ fontSize: 22, marginBottom: 12, color: 'var(--ink)' }}>{b.byCategory}</p>
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--line)',
+            borderRadius: 12, overflow: 'hidden', marginBottom: 32,
+          }}>
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr',
+              padding: '10px 20px', borderBottom: '1px solid var(--line)',
+              fontSize: 11, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500,
+            }}>
+              <span>Category</span>
+              <span style={{ textAlign: 'end' }}>{b.estimated}</span>
+              <span style={{ textAlign: 'end' }}>{b.spent}</span>
+            </div>
+            {categoryBudgets.map(({ id, title, estimated, actual }) => {
+              const over = actual > estimated && estimated > 0
+              return (
+                <div key={id} style={{
+                  display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr',
+                  padding: '14px 20px', borderTop: '1px solid var(--line-soft)',
+                  alignItems: 'center',
+                }}>
+                  <button
+                    onClick={() => openDrawer(id)}
+                    style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'start' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink)')}
+                  >
+                    {catName(title)}
+                  </button>
+                  <span className="font-mono-ui" style={{ textAlign: 'end', fontSize: 13, color: 'var(--ink-2)' }}>{fmt(estimated)}</span>
+                  <span className="font-mono-ui" style={{ textAlign: 'end', fontSize: 13, color: over ? 'var(--bad)' : 'var(--ink-2)' }}>{fmt(actual)}</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Top line items */}
+      {allTasksWithCost.length > 0 && (
+        <>
+          <p className="font-display" style={{ fontSize: 22, marginBottom: 12, color: 'var(--ink)' }}>{b.allLineItems}</p>
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--line)',
+            borderRadius: 12, overflow: 'hidden',
+          }}>
+            {allTasksWithCost.map((t, i) => (
+              <div key={t.id}
+                onClick={() => openDrawer(t.id)}
+                style={{
+                  display: 'grid', gridTemplateColumns: '1fr auto auto',
+                  padding: '12px 20px', borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
+                  alignItems: 'center', cursor: 'pointer', gap: 12, transition: 'background 120ms',
+                }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+              >
+                <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{t.title}</p>
+                <span className="font-mono-ui" style={{ fontSize: 13, color: 'var(--ink-2)' }}>{fmt(t.estimated_cost ?? 0)}</span>
+                {t.actual_cost != null ? (
+                  <span style={{
+                    fontSize: 11, padding: '2px 8px', borderRadius: 999,
+                    background: 'var(--ok-soft)', color: 'var(--ok)',
+                    border: '1px solid var(--ok-soft)', whiteSpace: 'nowrap',
+                  }}>paid</span>
+                ) : (
+                  <span style={{
+                    fontSize: 11, padding: '2px 8px', borderRadius: 999,
+                    background: 'transparent', color: 'var(--ink-3)',
+                    border: '1px solid var(--line)', whiteSpace: 'nowrap',
+                  }}>due</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {categoryBudgets.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-3)' }}>
+          <p className="font-display" style={{ fontSize: 40, marginBottom: 8 }}>○</p>
+          <p style={{ fontSize: 14 }}>{b.noCosts}</p>
+          <p style={{ fontSize: 13, marginTop: 4, color: 'var(--ink-4)' }}>{b.noCostsHint}</p>
+        </div>
+      )}
+    </div>
   )
+
+  if (asPage) {
+    return <div className="overflow-auto scrollbar-thin" style={{ minHeight: '100%', background: 'var(--bg)' }}>{inner}</div>
+  }
 
   return (
     <>
-      <div className="fixed inset-0 bg-stone-900/25 backdrop-blur-[2px] z-40" onClick={onClose} />
-
-      <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-stone-900 z-50 shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200 dark:border-stone-700">
-          <div>
-            <h2 className="font-semibold text-stone-800 dark:text-stone-100">{b.title}</h2>
-            <p className="text-xs text-stone-400 mt-0.5">{b.subtitle}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+      <div className="fixed inset-0 z-40 anim-fade-in"
+        style={{ background: 'color-mix(in oklch, var(--ink) 20%, transparent)', backdropFilter: 'blur(2px)' }}
+        onClick={onClose} />
+      <div className="fixed end-0 top-0 h-full w-full max-w-md z-50 overflow-auto scrollbar-thin anim-slide-r"
+        style={{ background: 'var(--bg-card)', borderInlineStart: '1px solid var(--line)', boxShadow: '-12px 0 32px rgba(0,0,0,0.06)' }}>
+        <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <p className="font-display" style={{ fontSize: 22, color: 'var(--ink)' }}>{b.title}</p>
+          <button onClick={onClose} style={{ width: 30, height: 30, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center', borderRadius: 6 }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {/* Summary cards */}
-          <div className="p-4 grid grid-cols-3 gap-3">
-            <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3 text-center">
-              <p className="text-xs text-stone-400 mb-1">{b.estimated}</p>
-              <p className="text-lg font-bold text-stone-800 dark:text-stone-100">{fmt(totalEstimated)}</p>
-            </div>
-            <div className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3 text-center">
-              <p className="text-xs text-stone-400 mb-1">{b.spent}</p>
-              <p className="text-lg font-bold text-stone-800 dark:text-stone-100">{fmt(totalActual)}</p>
-            </div>
-            <div className={`rounded-xl p-3 text-center ${overBudget ? 'bg-rose-50 dark:bg-rose-900/30' : 'bg-emerald-50 dark:bg-emerald-900/30'}`}>
-              <p className={`text-xs mb-1 ${overBudget ? 'text-rose-400' : 'text-emerald-500'}`}>
-                {overBudget ? b.over : b.remaining}
-              </p>
-              <p className={`text-lg font-bold ${overBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
-                {fmt(Math.abs(remaining))}
-              </p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          {totalEstimated > 0 && (
-            <div className="px-4 pb-4">
-              <div className="h-2.5 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${overBudget ? 'bg-rose-400' : 'bg-emerald-400'}`}
-                  style={{ width: `${Math.min((totalActual / totalEstimated) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-stone-400 mt-1 text-right">
-                {Math.round((totalActual / totalEstimated) * 100)}{b.ofBudgetUsed}
-              </p>
-            </div>
-          )}
-
-          {/* By category */}
-          {categoryBudgets.length > 0 && (
-            <div className="px-4 pb-4">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">{b.byCategory}</p>
-              <div className="space-y-2">
-                {categoryBudgets.map((cat) => {
-                  const pct = cat.estimated > 0 ? Math.min((cat.actual / cat.estimated) * 100, 100) : 0
-                  const over = cat.actual > cat.estimated && cat.estimated > 0
-                  return (
-                    <div key={cat.id} className="bg-stone-50 dark:bg-stone-800 rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <button
-                          onClick={() => { openDrawer(cat.id); onClose() }}
-                          className="text-sm font-medium text-stone-700 dark:text-stone-200 hover:text-rose-600 dark:hover:text-rose-400 transition-colors text-left truncate"
-                        >
-                          {catName(cat.title)}
-                        </button>
-                        <span className={`text-xs font-medium flex-shrink-0 ml-2 ${over ? 'text-rose-500' : 'text-stone-500 dark:text-stone-400'}`}>
-                          {fmt(cat.actual)} / {fmt(cat.estimated)}
-                        </span>
-                      </div>
-                      {cat.estimated > 0 && (
-                        <div className="h-1.5 bg-stone-200 dark:bg-stone-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${over ? 'bg-rose-400' : 'bg-emerald-400'}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* All tasks with costs */}
-          {allTasksWithCost.length > 0 && (
-            <div className="px-4 pb-6">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">{b.allLineItems}</p>
-              <div className="space-y-1">
-                {allTasksWithCost.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => { openDrawer(t.id); onClose() }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors text-left group"
-                  >
-                    <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 truncate group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
-                      {t.title}
-                    </span>
-                    <div className="flex items-center gap-2 flex-shrink-0 text-xs">
-                      {t.estimated_cost != null && (
-                        <span className="text-stone-400">{fmt(t.estimated_cost)}</span>
-                      )}
-                      {t.actual_cost != null && (
-                        <span className={`font-medium ${(t.actual_cost ?? 0) > (t.estimated_cost ?? Infinity) ? 'text-rose-500' : 'text-emerald-600'}`}>
-                          → {fmt(t.actual_cost)}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {allTasksWithCost.length === 0 && (
-            <div className="px-4 pb-6 text-center py-12">
-              <p className="text-3xl mb-3">💰</p>
-              <p className="text-stone-500 text-sm">{b.noCosts}</p>
-              <p className="text-stone-400 text-xs mt-1">{b.noCostsHint}</p>
-            </div>
-          )}
+        <div style={{ padding: '24px' }}>
+          {inner}
         </div>
       </div>
     </>
