@@ -185,10 +185,9 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
     const text = newComment.trim()
     if (!text || !currentUserId) return
 
-    // Resolve @Name mentions to user IDs
-    const mentionedNames = [...text.matchAll(/@([\w ]+)/g)].map(m => m[1].trim().toLowerCase())
+    // Resolve @Name mentions to user IDs — match each collaborator's exact name
     const mentionedUserIds = collaborators
-      .filter(c => c.name && mentionedNames.some(n => c.name!.toLowerCase() === n))
+      .filter(c => c.name && text.includes(`@${c.name}`))
       .map(c => c.id)
 
     await addComment.mutateAsync({ taskId, text, userId: currentUserId, weddingId, mentionedUserIds })
