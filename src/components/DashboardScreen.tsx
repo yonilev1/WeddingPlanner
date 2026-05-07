@@ -5,7 +5,6 @@ import { ProgressBar } from './ui/ProgressBar'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
 import { useTranslation } from '../i18n/useTranslation'
-import { LANGUAGES } from '../i18n/translations'
 
 interface Props {
   wedding: Wedding
