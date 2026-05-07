@@ -36,13 +36,30 @@ export function useComments(taskId: string | null) {
 export function useAddComment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ taskId, text, userId }: { taskId: string; text: string; userId: string }) => {
+    mutationFn: async ({
+      taskId, text, userId, weddingId, mentionedUserIds = [],
+    }: {
+      taskId: string; text: string; userId: string
+      weddingId?: string; mentionedUserIds?: string[]
+    }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from('comments') as any)
         .insert({ task_id: taskId, text, user_id: userId })
         .select()
         .single()
       if (error) throw error
+
+      // Notify mentioned users (skip the commenter themselves)
+      if (weddingId && mentionedUserIds.length) {
+        const rows = mentionedUserIds
+          .filter(uid => uid !== userId)
+          .map(uid => ({ user_id: uid, wedding_id: weddingId, task_id: taskId, type: 'mention', message: text }))
+        if (rows.length) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase.from('notifications') as any).insert(rows)
+        }
+      }
+
       return data
     },
     onSuccess: (_d, { taskId }) => {

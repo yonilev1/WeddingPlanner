@@ -182,8 +182,16 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
 
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newComment.trim() || !currentUserId) return
-    await addComment.mutateAsync({ taskId, text: newComment.trim(), userId: currentUserId })
+    const text = newComment.trim()
+    if (!text || !currentUserId) return
+
+    // Resolve @Name mentions to user IDs
+    const mentionedNames = [...text.matchAll(/@([\w ]+)/g)].map(m => m[1].trim().toLowerCase())
+    const mentionedUserIds = collaborators
+      .filter(c => c.name && mentionedNames.some(n => c.name!.toLowerCase() === n))
+      .map(c => c.id)
+
+    await addComment.mutateAsync({ taskId, text, userId: currentUserId, weddingId, mentionedUserIds })
     setNewComment('')
     setMentionQuery(null)
     setMentionAnchor(null)

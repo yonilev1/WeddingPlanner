@@ -4,6 +4,7 @@ import { useWedding } from './hooks/useWedding'
 import { useTasks, useTaskTree } from './hooks/useTasks'
 import { useUIStore } from './store/uiStore'
 import { usePresence } from './hooks/usePresence'
+import { useNotifications, useMarkNotificationsRead } from './hooks/useNotifications'
 import { AuthScreen } from './components/AuthScreen'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { DashboardScreen } from './components/DashboardScreen'
@@ -40,6 +41,7 @@ const ICONS = {
   wallet:   "M2 8h20v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8zM2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v2M12 14h.01",
   users:    "M17 21a5 5 0 0 0-10 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21a5 5 0 0 0-7.5-4.33M2 21a5 5 0 0 1 7.5-4.33",
   signout:  "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1",
+  bell:     "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0",
 }
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -112,6 +114,122 @@ const iconBtnStyle: React.CSSProperties = {
   background: 'var(--bg-card)', color: 'var(--ink-3)',
   border: '1px solid var(--line)', borderRadius: 8, cursor: 'pointer',
   transition: 'all 120ms',
+}
+
+// ─── Notification bell ────────────────────────────────────────────────────────
+
+function NotificationBell({ userId }: { userId: string }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const { data: notifications = [] } = useNotifications(userId)
+  const markRead = useMarkNotificationsRead()
+  const { openDrawer } = useUIStore()
+
+  const unread = notifications.filter(n => !n.read).length
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  function handleOpen() {
+    setOpen(o => !o)
+    if (!open && unread > 0) markRead.mutate(userId)
+  }
+
+  function handleClick(taskId: string) {
+    setOpen(false)
+    openDrawer(taskId)
+  }
+
+  function relTime(iso: string) {
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
+    if (m < 1) return 'just now'
+    if (m < 60) return `${m}m ago`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h}h ago`
+    return `${Math.floor(h / 24)}d ago`
+  }
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={handleOpen}
+        title="Notifications"
+        style={{ ...iconBtnStyle, position: 'relative' }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
+      >
+        <Icon d={ICONS.bell} size={14} />
+        {unread > 0 && (
+          <span style={{
+            position: 'absolute', top: -4, right: -4,
+            minWidth: 16, height: 16, borderRadius: 999, padding: '0 4px',
+            background: 'var(--accent)', color: '#fff',
+            fontSize: 10, fontWeight: 700, lineHeight: '16px', textAlign: 'center',
+            border: '2px solid var(--bg-card)',
+          }}>
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 40, right: 0, zIndex: 50,
+          width: 300, maxHeight: 400, overflowY: 'auto',
+          background: 'var(--bg-card)', border: '1px solid var(--line)',
+          borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        }} className="anim-pop scrollbar-thin">
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>Notifications</p>
+            {notifications.length > 0 && (
+              <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)' }}>{notifications.length} total</span>
+            )}
+          </div>
+          {notifications.length === 0 ? (
+            <p style={{ padding: '24px 16px', textAlign: 'center', fontSize: 13, color: 'var(--ink-3)' }}>No notifications yet</p>
+          ) : (
+            notifications.map(n => (
+              <button
+                key={n.id}
+                onClick={() => handleClick(n.task_id)}
+                style={{
+                  width: '100%', textAlign: 'start', padding: '12px 16px',
+                  background: n.read ? 'transparent' : 'var(--accent-soft)',
+                  border: 'none', borderBottom: '1px solid var(--line-soft)',
+                  cursor: 'pointer', transition: 'background 120ms', display: 'block',
+                }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = n.read ? 'transparent' : 'var(--accent-soft)')}
+              >
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>@</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: n.read ? 400 : 600, color: 'var(--ink)', marginBottom: 2 }}>
+                      You were mentioned in a comment
+                    </p>
+                    {n.message && (
+                      <p style={{ fontSize: 12, color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {n.message}
+                      </p>
+                    )}
+                    <p className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 3 }}>{relTime(n.created_at)}</p>
+                  </div>
+                  {!n.read && (
+                    <span style={{ width: 7, height: 7, borderRadius: 999, background: 'var(--accent)', flexShrink: 0, marginTop: 4 }} />
+                  )}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── Main app shell ───────────────────────────────────────────────────────────
@@ -241,6 +359,7 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
         )}
 
         {/* Icon actions */}
+        <NotificationBell userId={userId} />
         <button onClick={toggleDarkMode} title={darkMode ? n.switchToLight : n.switchToDark} style={iconBtnStyle}
           onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>

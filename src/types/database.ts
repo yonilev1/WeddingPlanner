@@ -138,6 +138,34 @@ export interface Database {
         }
       }
 
+      // ── notifications ────────────────────────
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          wedding_id: string
+          task_id: string
+          type: string
+          message: string | null
+          read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          wedding_id: string
+          task_id: string
+          type?: string
+          message?: string | null
+          read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          read?: boolean
+        }
+      }
+
       // ── task_activity ────────────────────────
       task_activity: {
         Row: {
@@ -206,6 +234,7 @@ export type Profile       = Tables<'profiles'>
 export type Task          = Tables<'tasks'>
 export type Comment       = Tables<'comments'>
 export type TaskActivity  = Tables<'task_activity'>
+export type Notification  = Tables<'notifications'>
 
 // Domain enum types (kept as string literals for DB compatibility)
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
