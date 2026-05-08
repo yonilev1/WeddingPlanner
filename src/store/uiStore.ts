@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { TaskStatus } from '../types/database'
 import { type Language, LANGUAGES } from '../i18n/translations'
 
-type Screen = 'auth' | 'onboarding' | 'app'
+type Screen = 'auth' | 'onboarding' | 'pending' | 'app'
 type MainTab = 'dashboard' | 'board' | 'budget' | 'people'
 export type ViewMode = 'list' | 'heatmap'
 

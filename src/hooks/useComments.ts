@@ -104,7 +104,7 @@ export function useDeleteComment() {
   const qc = useQueryClient()
   const toast = useToast()
   return useMutation({
-    mutationFn: async ({ commentId, taskId }: { commentId: string; taskId: string }) => {
+    mutationFn: async ({ commentId }: { commentId: string; taskId: string }) => {
       const { error } = await supabase.from('comments').delete().eq('id', commentId)
       if (error) throw error
     },
@@ -123,7 +123,10 @@ export function useUpdateComment() {
   const toast = useToast()
   return useMutation({
     mutationFn: async ({ commentId, text, taskId }: { commentId: string; text: string; taskId: string }) => {
-      const { error } = await supabase.from('comments').update({ text }).eq('id', commentId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('comments') as any)
+        .update({ text })
+        .eq('id', commentId)
       if (error) throw error
     },
     onSuccess: (_d, { taskId }) => {

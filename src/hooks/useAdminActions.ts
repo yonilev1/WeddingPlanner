@@ -7,8 +7,8 @@ export function useApproveMember(weddingId: string) {
   const toast = useToast()
   return useMutation({
     mutationFn: async (profileId: string) => {
-      const { error } = await supabase
-        .from('profiles')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('profiles') as any)
         .update({ member_status: 'active' })
         .eq('id', profileId)
       if (error) throw error
@@ -28,8 +28,8 @@ export function useRejectMember(weddingId: string) {
   const toast = useToast()
   return useMutation({
     mutationFn: async (profileId: string) => {
-      const { error } = await supabase
-        .from('profiles')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('profiles') as any)
         .update({ wedding_id: null })
         .eq('id', profileId)
       if (error) throw error
@@ -49,8 +49,8 @@ export function useRemoveMember(weddingId: string) {
   const toast = useToast()
   return useMutation({
     mutationFn: async (profileId: string) => {
-      const { error } = await supabase
-        .from('profiles')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('profiles') as any)
         .update({ wedding_id: null })
         .eq('id', profileId)
       if (error) throw error
@@ -70,8 +70,8 @@ export function useSetMemberRole(weddingId: string) {
   const toast = useToast()
   return useMutation({
     mutationFn: async ({ profileId, role }: { profileId: string; role: 'admin' | 'member' }) => {
-      const { error } = await supabase
-        .from('profiles')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('profiles') as any)
         .update({ role })
         .eq('id', profileId)
       if (error) throw error
