@@ -122,7 +122,7 @@ export function useUpdateComment() {
   const qc = useQueryClient()
   const toast = useToast()
   return useMutation({
-    mutationFn: async ({ commentId, text, taskId }: { commentId: string; text: string; taskId: string }) => {
+    mutationFn: async ({ commentId, text }: { commentId: string; text: string; taskId: string }) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase.from('comments') as any)
         .update({ text })
