@@ -18,15 +18,21 @@ export function OnboardingScreen({ userId, onComplete }: Props) {
   const [displayName, setDisplayName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [waitingForApproval, setWaitingForApproval] = useState(false)
 
   const inputCls =
     'w-full px-4 py-2.5 rounded-xl border border-stone-300 text-stone-800 placeholder-stone-400 ' +
     'focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all text-sm'
 
-  const linkProfile = async (weddingId: string) => {
+  const linkProfile = async (weddingId: string, isCreator: boolean) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('profiles') as any)
-      .update({ wedding_id: weddingId, name: displayName || null })
+      .update({
+        wedding_id: weddingId,
+        name: displayName || null,
+        role: isCreator ? 'admin' : 'member',
+        member_status: isCreator ? 'active' : 'pending',
+      })
       .eq('id', userId)
     return error as { message: string } | null
   }
@@ -48,7 +54,7 @@ export function OnboardingScreen({ userId, onComplete }: Props) {
       return
     }
 
-    const pErr = await linkProfile(weddingId)
+    const pErr = await linkProfile(weddingId, true)
     if (pErr) { setError(pErr.message); setLoading(false); return }
 
     onComplete()
@@ -71,10 +77,28 @@ export function OnboardingScreen({ userId, onComplete }: Props) {
       return
     }
 
-    const pErr = await linkProfile(rows[0].id)
+    const pErr = await linkProfile(rows[0].id, false)
     if (pErr) { setError(pErr.message); setLoading(false); return }
 
-    onComplete()
+    setWaitingForApproval(true)
+    setLoading(false)
+  }
+
+  if (waitingForApproval) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-stone-50 to-amber-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-stone-200 flex items-center justify-center text-3xl mx-auto mb-4">
+            ⏳
+          </div>
+          <h1 className="text-2xl font-serif font-semibold text-stone-800 mb-2">{tr.admin.pendingApproval}</h1>
+          <p className="text-stone-600 mb-8">{tr.admin.waitingForApproval}</p>
+          <p className="text-sm text-stone-500">
+            The event admin will review your request and add you to the event. Check back soon!
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { Comment, CommentWithAuthor, TaskActivity, TaskActivityWithActor } from '../types/database'
+import { useToast } from './useToast'
 
 export function useComments(taskId: string | null) {
   return useQuery({
@@ -96,5 +97,41 @@ export function useActivity(taskId: string | null) {
       }))
     },
     enabled: !!taskId,
+  })
+}
+
+export function useDeleteComment() {
+  const qc = useQueryClient()
+  const toast = useToast()
+  return useMutation({
+    mutationFn: async ({ commentId, taskId }: { commentId: string; taskId: string }) => {
+      const { error } = await supabase.from('comments').delete().eq('id', commentId)
+      if (error) throw error
+    },
+    onSuccess: (_d, { taskId }) => {
+      qc.invalidateQueries({ queryKey: ['comments', taskId] })
+      toast.success('Comment deleted')
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete comment: ${error.message}`)
+    },
+  })
+}
+
+export function useUpdateComment() {
+  const qc = useQueryClient()
+  const toast = useToast()
+  return useMutation({
+    mutationFn: async ({ commentId, text, taskId }: { commentId: string; text: string; taskId: string }) => {
+      const { error } = await supabase.from('comments').update({ text }).eq('id', commentId)
+      if (error) throw error
+    },
+    onSuccess: (_d, { taskId }) => {
+      qc.invalidateQueries({ queryKey: ['comments', taskId] })
+      toast.success('Comment updated')
+    },
+    onError: (error) => {
+      toast.error(`Failed to update comment: ${error.message}`)
+    },
   })
 }

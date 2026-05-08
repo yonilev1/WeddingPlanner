@@ -46,6 +46,8 @@ export interface Database {
           name: string | null
           avatar_url: string | null
           wedding_id: string | null
+          role: 'admin' | 'member'
+          member_status: 'pending' | 'active'
           created_at: string
         }
         Insert: {
@@ -53,6 +55,8 @@ export interface Database {
           name?: string | null
           avatar_url?: string | null
           wedding_id?: string | null
+          role?: 'admin' | 'member'
+          member_status?: 'pending' | 'active'
           created_at?: string
         }
         Update: {
@@ -60,6 +64,8 @@ export interface Database {
           name?: string | null
           avatar_url?: string | null
           wedding_id?: string | null
+          role?: 'admin' | 'member'
+          member_status?: 'pending' | 'active'
           created_at?: string
         }
       }

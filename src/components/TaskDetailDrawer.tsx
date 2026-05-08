@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Task, TaskStatus } from '../types/database'
 import { useUpdateTask, useDeleteTask } from '../hooks/useTasks'
-import { useComments, useAddComment, useActivity } from '../hooks/useComments'
+import { useComments, useAddComment, useActivity, useDeleteComment, useUpdateComment } from '../hooks/useComments'
 import { useCollaborators } from '../hooks/useCollaborators'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
@@ -15,6 +15,8 @@ interface Props {
   taskId: string
   tasks: Task[]
   weddingId: string
+  isAdmin?: boolean
+  userId?: string
 }
 
 type DrawerTab = 'details' | 'comments' | 'activity'
@@ -36,13 +38,16 @@ const inputStyle: React.CSSProperties = {
   outline: 'none', transition: 'border-color 120ms', boxSizing: 'border-box',
 }
 
-export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
+export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, userId = '' }: Props) {
   const { closeDrawer, language } = useUIStore()
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
+  const deleteComment = useDeleteComment()
+  const updateComment = useUpdateComment()
   const qc = useQueryClient()
   const tr = useTranslation()
   const d = tr.drawer
+  const a = tr.admin
   const locale = LOCALE_MAP[language] ?? 'en-US'
 
   const STATUS_OPTS: { value: TaskStatus; label: string }[] = [
@@ -99,6 +104,8 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [mentionQuery, setMentionQuery] = useState<string | null>(null)
   const [mentionAnchor, setMentionAnchor] = useState<{ start: number; end: number } | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editingText, setEditingText] = useState('')
   const commentRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: comments } = useComments(taskId)
@@ -255,34 +262,36 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginTop: 2 }}>
-            {confirmingDelete ? (
-              <>
+            {isAdmin && (
+              confirmingDelete ? (
+                <>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleteTask.isPending}
+                    style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, background: 'var(--bad)', color: '#fff', borderRadius: 8, border: 'none', cursor: 'pointer' }}
+                  >
+                    {deleteTask.isPending ? '…' : d.confirmDelete ?? 'Delete'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, color: 'var(--ink-3)', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                  >
+                    {d.cancel ?? 'Cancel'}
+                  </button>
+                </>
+              ) : (
                 <button
-                  onClick={handleDelete}
-                  disabled={deleteTask.isPending}
-                  style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, background: 'var(--bad)', color: '#fff', borderRadius: 8, border: 'none', cursor: 'pointer' }}
+                  onClick={() => setConfirmingDelete(true)}
+                  title={d.deleteTask ?? 'Delete task'}
+                  style={{ padding: 6, color: 'var(--ink-4)', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer', transition: 'color 120ms' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--bad)')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-4)')}
                 >
-                  {deleteTask.isPending ? '…' : d.confirmDelete ?? 'Delete'}
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
                 </button>
-                <button
-                  onClick={() => setConfirmingDelete(false)}
-                  style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, color: 'var(--ink-3)', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer' }}
-                >
-                  {d.cancel ?? 'Cancel'}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => setConfirmingDelete(true)}
-                title={d.deleteTask ?? 'Delete task'}
-                style={{ padding: 6, color: 'var(--ink-4)', background: 'none', border: 'none', borderRadius: 8, cursor: 'pointer', transition: 'color 120ms' }}
-                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--bad)')}
-                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-4)')}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+              )
             )}
             <button
               onClick={closeDrawer}
@@ -443,24 +452,81 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId }: Props) {
                   <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, paddingTop: 40 }}>{d.noComments}</p>
                 ) : (
                   comments.map((c) => (
-                    <div key={c.id} style={{ display: 'flex', gap: 12 }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 999, flexShrink: 0,
-                        background: 'var(--accent-soft)', color: 'var(--accent-ink)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 12, fontWeight: 700,
-                      }}>
-                        {initials(c.author.name)}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{c.author.name ?? 'Unknown'}</span>
-                          <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{relativeTime(c.created_at)}</span>
+                    <div key={c.id}>
+                      {editingCommentId === c.id ? (
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                          <textarea
+                            autoFocus
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            style={{ ...inputStyle, flex: 1, resize: 'none', lineHeight: 1.5 }}
+                            rows={2}
+                          />
+                          <button
+                            onClick={() => {
+                              updateComment.mutate({ commentId: c.id, text: editingText, taskId })
+                              setEditingCommentId(null)
+                              setEditingText('')
+                            }}
+                            disabled={updateComment.isPending}
+                            style={{ padding: '9px 12px', background: 'var(--ok)', color: '#fff', fontSize: 12, fontWeight: 500, borderRadius: 8, border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingCommentId(null)
+                              setEditingText('')
+                            }}
+                            style={{ padding: '9px 12px', background: 'none', color: 'var(--ink-3)', fontSize: 12, fontWeight: 500, border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                          >
+                            {d.cancel}
+                          </button>
                         </div>
-                        <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 2, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-                          {renderCommentText(c.text)}
-                        </p>
-                      </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: 12 }}>
+                          <div style={{
+                            width: 32, height: 32, borderRadius: 999, flexShrink: 0,
+                            background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 12, fontWeight: 700,
+                          }}>
+                            {initials(c.author.name)}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{c.author.name ?? 'Unknown'}</span>
+                              <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{relativeTime(c.created_at)}</span>
+                              {(isAdmin || c.user_id === userId) && (
+                                <div style={{ display: 'flex', gap: 4, marginLeft: 'auto' }}>
+                                  <button
+                                    onClick={() => {
+                                      setEditingCommentId(c.id)
+                                      setEditingText(c.text)
+                                    }}
+                                    style={{ padding: '2px 6px', fontSize: 11, color: 'var(--ink-3)', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 120ms' }}
+                                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink)')}
+                                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-3)')}
+                                  >
+                                    {a.editComment}
+                                  </button>
+                                  <button
+                                    onClick={() => deleteComment.mutate({ commentId: c.id, taskId })}
+                                    style={{ padding: '2px 6px', fontSize: 11, color: 'var(--ink-3)', background: 'none', border: 'none', cursor: 'pointer', transition: 'color 120ms' }}
+                                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--bad)')}
+                                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-3)')}
+                                  >
+                                    {a.deleteComment}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <p style={{ fontSize: 14, color: 'var(--ink-2)', marginTop: 2, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                              {renderCommentText(c.text)}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}

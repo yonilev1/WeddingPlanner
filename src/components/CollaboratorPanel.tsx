@@ -3,12 +3,15 @@ import type { Wedding } from '../types/database'
 import { useCollaborators } from '../hooks/useCollaborators'
 import type { PresenceUser } from '../hooks/usePresence'
 import { useTranslation } from '../i18n/useTranslation'
+import { useApproveMember, useRejectMember, useRemoveMember, useSetMemberRole } from '../hooks/useAdminActions'
 
 interface Props {
   wedding: Wedding
   onlineUsers: PresenceUser[]
   onClose: () => void
   asPage?: boolean
+  isAdmin?: boolean
+  currentUserId?: string
 }
 
 function initials(name: string | null) {
@@ -16,14 +19,23 @@ function initials(name: string | null) {
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
-export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage }: Props) {
+export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage, isAdmin = false, currentUserId = '' }: Props) {
   const { data: collaborators } = useCollaborators(wedding.id)
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
   const tr = useTranslation()
   const c = tr.collaborator
+  const a = tr.admin
+
+  const approveMember = useApproveMember(wedding.id)
+  const rejectMember = useRejectMember(wedding.id)
+  const removeMember = useRemoveMember(wedding.id)
+  const setMemberRole = useSetMemberRole(wedding.id)
 
   const onlineIds = new Set(onlineUsers.map((u) => u.userId))
   const shareLink = `${window.location.origin}?code=${wedding.share_code}`
+
+  const pendingMembers = collaborators?.filter(p => p.member_status === 'pending') ?? []
+  const activeMembers = collaborators?.filter(p => p.member_status === 'active') ?? []
 
   const copy = async (type: 'code' | 'link') => {
     const text = type === 'code' ? wedding.share_code : shareLink
@@ -80,15 +92,78 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage }: Pro
         </div>
       </div>
 
-      {/* Members list */}
+      {/* Pending members section (admin only) */}
+      {isAdmin && pendingMembers.length > 0 && (
+        <>
+          <p className="font-display" style={{ fontSize: 22, marginBottom: 12, marginTop: 32, color: 'var(--ink)' }}>
+            {a.pendingMembers}
+          </p>
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--warn)', borderRadius: 12, overflow: 'hidden',
+            marginBottom: 32,
+          }}>
+            {pendingMembers.map((profile, i) => (
+              <div key={profile.id} style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '16px 20px',
+                borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
+              }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 999,
+                  background: 'var(--warn-soft)', color: 'var(--warn)',
+                  display: 'grid', placeItems: 'center',
+                  fontSize: 14, fontWeight: 600,
+                }}>
+                  {initials(profile.name)}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{profile.name ?? 'Unknown'}</p>
+                  <p className="font-mono-ui" style={{ fontSize: 11, color: 'var(--warn)', marginTop: 2 }}>
+                    Awaiting approval
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={() => approveMember.mutate(profile.id)}
+                    disabled={approveMember.isPending}
+                    style={{
+                      height: 32, padding: '0 12px', fontSize: 12, fontWeight: 500,
+                      background: 'var(--ok)', color: 'white',
+                      border: 'none', borderRadius: 6, cursor: 'pointer',
+                      transition: 'all 120ms', opacity: approveMember.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {a.approveJoin}
+                  </button>
+                  <button
+                    onClick={() => rejectMember.mutate(profile.id)}
+                    disabled={rejectMember.isPending}
+                    style={{
+                      height: 32, padding: '0 12px', fontSize: 12, fontWeight: 500,
+                      background: 'var(--bad)', color: 'white',
+                      border: 'none', borderRadius: 6, cursor: 'pointer',
+                      transition: 'all 120ms', opacity: rejectMember.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {a.rejectJoin}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Active members section */}
       <p className="font-display" style={{ fontSize: 22, marginBottom: 12, color: 'var(--ink)' }}>
-        {c.members}
+        {a.activeMembers}
       </p>
       <div style={{
         background: 'var(--bg-card)', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden',
       }}>
-        {collaborators?.map((profile, i) => {
+        {activeMembers.map((profile, i) => {
           const isOnline = onlineIds.has(profile.id)
+          const isAdmin_ = profile.role === 'admin'
           return (
             <div key={profile.id} style={{
               display: 'flex', alignItems: 'center', gap: 14,
@@ -113,24 +188,66 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage }: Pro
                 )}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{profile.name ?? 'Unknown'}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                  <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{profile.name ?? 'Unknown'}</p>
+                  {isAdmin_ && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
+                      background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+                      textTransform: 'uppercase', letterSpacing: '0.04em',
+                    }}>
+                      {a.adminBadge}
+                    </span>
+                  )}
+                </div>
                 {isOnline && (
                   <p className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ok)', marginTop: 2 }}>{c.onlineNow}</p>
                 )}
               </div>
-              {isOnline ? (
-                <span style={{
-                  fontSize: 11, padding: '2px 8px', borderRadius: 999,
-                  background: 'var(--ok-soft)', color: 'var(--ok)',
-                  border: '1px solid var(--ok-soft)',
-                }}>{c.online}</span>
-              ) : (
-                <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>offline</span>
+              {isAdmin && profile.id !== currentUserId && (
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={() => setMemberRole.mutate({ profileId: profile.id, role: isAdmin_ ? 'member' : 'admin' })}
+                    disabled={setMemberRole.isPending}
+                    style={{
+                      height: 32, padding: '0 12px', fontSize: 12, fontWeight: 500,
+                      background: isAdmin_ ? 'var(--bad-soft)' : 'var(--accent-soft)',
+                      color: isAdmin_ ? 'var(--bad)' : 'var(--accent-ink)',
+                      border: 'none', borderRadius: 6, cursor: 'pointer',
+                      transition: 'all 120ms', opacity: setMemberRole.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {isAdmin_ ? a.removeAdmin : a.makeAdmin}
+                  </button>
+                  <button
+                    onClick={() => removeMember.mutate(profile.id)}
+                    disabled={removeMember.isPending}
+                    style={{
+                      height: 32, padding: '0 12px', fontSize: 12, fontWeight: 500,
+                      background: 'var(--bad-soft)', color: 'var(--bad)',
+                      border: 'none', borderRadius: 6, cursor: 'pointer',
+                      transition: 'all 120ms', opacity: removeMember.isPending ? 0.6 : 1,
+                    }}
+                  >
+                    {a.removeFromEvent}
+                  </button>
+                </div>
+              )}
+              {!isAdmin && (
+                (isOnline ? (
+                  <span style={{
+                    fontSize: 11, padding: '2px 8px', borderRadius: 999,
+                    background: 'var(--ok-soft)', color: 'var(--ok)',
+                    border: '1px solid var(--ok-soft)',
+                  }}>{c.online}</span>
+                ) : (
+                  <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>offline</span>
+                ))
               )}
             </div>
           )
         })}
-        {!collaborators?.length && (
+        {!activeMembers.length && (
           <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--ink-3)' }}>
             <p className="font-display" style={{ fontSize: 32, marginBottom: 8 }}>○</p>
             <p style={{ fontSize: 14 }}>{c.noMembers}</p>
@@ -174,11 +291,12 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage }: Pro
 
           {/* Compact member list */}
           <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>
-            {c.members} ({collaborators?.length ?? 0})
+            {c.members} ({activeMembers?.length ?? 0})
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 200, overflowY: 'auto' }} className="scrollbar-thin">
-            {collaborators?.map((profile) => {
+            {activeMembers?.map((profile) => {
               const isOnline = onlineIds.has(profile.id)
+              const isAdmin_ = profile.role === 'admin'
               return (
                 <div key={profile.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
                   <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -189,8 +307,19 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage }: Pro
                     }}>{initials(profile.name)}</div>
                     {isOnline && <div style={{ position: 'absolute', bottom: -1, right: -1, width: 9, height: 9, borderRadius: 999, background: 'var(--ok)', border: '2px solid var(--bg-card)' }} />}
                   </div>
-                  <p style={{ fontSize: 13, color: 'var(--ink)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.name ?? 'Unknown'}</p>
-                  {isOnline && <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ok)' }}>online</span>}
+                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                    <p style={{ fontSize: 13, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {profile.name ?? 'Unknown'}
+                      {isAdmin_ && (
+                        <span style={{
+                          fontSize: 8, fontWeight: 700, padding: '1px 4px', marginLeft: 6, borderRadius: 3,
+                          background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+                          display: 'inline-block',
+                        }}>ADMIN</span>
+                      )}
+                    </p>
+                  </div>
+                  {isOnline && <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ok)', flexShrink: 0 }}>online</span>}
                 </div>
               )
             })}

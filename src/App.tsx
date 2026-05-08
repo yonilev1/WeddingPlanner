@@ -366,11 +366,13 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
           <Icon d={darkMode ? ICONS.sun : ICONS.moon} size={14} />
         </button>
         <span className="hidden sm:contents">
-          <button onClick={() => setSettingsOpen(true)} title={n.settings} style={iconBtnStyle}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
-            <Icon d={ICONS.settings} size={14} />
-          </button>
+          {profile?.role === 'admin' && (
+            <button onClick={() => setSettingsOpen(true)} title={n.settings} style={iconBtnStyle}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+              <Icon d={ICONS.settings} size={14} />
+            </button>
+          )}
           <LanguagePicker />
           <button onClick={signOut} title={n.signOut} style={iconBtnStyle}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
@@ -397,6 +399,8 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
             onlineUsers={onlineUsers}
             onClose={() => setActiveMainTab('dashboard' as any)}
             asPage
+            isAdmin={profile?.role === 'admin'}
+            currentUserId={userId}
           />
         )}
       </main>
@@ -407,6 +411,8 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
           taskId={drawerTaskId}
           tasks={allTasks}
           weddingId={weddingId}
+          isAdmin={profile?.role === 'admin'}
+          userId={userId}
         />
       )}
 
@@ -425,6 +431,30 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
+function PendingApprovalScreen() {
+  const tr = useTranslation()
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+      <div className="w-full max-w-md text-center">
+        <div style={{
+          width: 64, height: 64, background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+          borderRadius: 16, display: 'grid', placeItems: 'center',
+          fontSize: 32, marginBottom: 24, marginLeft: 'auto', marginRight: 'auto'
+        }}>⏳</div>
+        <h1 className="font-serif text-2xl font-semibold mb-2" style={{ color: 'var(--ink)' }}>
+          {tr.admin.pendingApproval}
+        </h1>
+        <p style={{ color: 'var(--ink-2)', marginBottom: 24 }}>
+          {tr.admin.waitingForApproval}
+        </p>
+        <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>
+          The event admin will review your request and add you to the event. Check back soon!
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const { user, profile, loading, refreshProfile } = useAuth()
   const { setScreen, language, setLanguage } = useUIStore()
@@ -438,8 +468,9 @@ export default function App() {
     if (loading) return
     if (!user) setScreen('auth')
     else if (!profile?.wedding_id) setScreen('onboarding')
+    else if (profile?.member_status === 'pending') setScreen('pending')
     else setScreen('app')
-  }, [user, profile?.wedding_id, loading, setScreen])
+  }, [user, profile?.wedding_id, profile?.member_status, loading, setScreen])
 
   if (loading) return <Spinner />
   if (!user) return (
@@ -451,6 +482,12 @@ export default function App() {
   if (!profile?.wedding_id) return (
     <>
       <OnboardingScreen userId={user.id} onComplete={refreshProfile} />
+      <ToastContainer />
+    </>
+  )
+  if (profile?.member_status === 'pending') return (
+    <>
+      <PendingApprovalScreen />
       <ToastContainer />
     </>
   )
