@@ -19,6 +19,58 @@ function initials(name: string | null) {
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
+function EmailInviteCard() {
+  const [email, setEmail] = useState('')
+  const [sent, setSent] = useState(false)
+
+  const handleSend = () => {
+    if (email.trim()) {
+      setEmail('')
+      setSent(true)
+      setTimeout(() => setSent(false), 2000)
+    }
+  }
+
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--line)', borderRadius: 12,
+      padding: 20, marginBottom: 32,
+    }}>
+      <p style={{ fontSize: 13, fontWeight: 500, marginBottom: 12, color: 'var(--ink)' }}>Invite by email</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          type="email"
+          placeholder="name@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          style={{
+            flex: 1, height: 36, padding: '0 12px', fontSize: 13,
+            background: 'var(--bg-card)', color: 'var(--ink)',
+            border: '1px solid var(--line)', borderRadius: 8, outline: 'none',
+            transition: 'border-color 120ms',
+          }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+          onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--line)')}
+        />
+        <button
+          onClick={handleSend}
+          disabled={!email.trim()}
+          style={{
+            height: 36, padding: '0 14px', fontSize: 13, fontWeight: 500,
+            background: email.trim() ? 'var(--accent)' : 'var(--line)',
+            color: 'white',
+            border: 'none', borderRadius: 8, cursor: email.trim() ? 'pointer' : 'not-allowed',
+            transition: 'all 120ms', opacity: email.trim() ? 1 : 0.6,
+          }}
+        >
+          {sent ? 'Sent!' : 'Send invite'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage, isAdmin = false, currentUserId = '' }: Props) {
   const { data: collaborators } = useCollaborators(wedding.id)
   const [copied, setCopied] = useState<'code' | 'link' | null>(null)
@@ -91,6 +143,9 @@ export function CollaboratorPanel({ wedding, onlineUsers, onClose, asPage, isAdm
           </button>
         </div>
       </div>
+
+      {/* Email invite section */}
+      <EmailInviteCard />
 
       {/* Pending members section (admin only) */}
       {isAdmin && pendingMembers.length > 0 && (

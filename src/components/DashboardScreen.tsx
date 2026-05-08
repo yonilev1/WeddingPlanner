@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { Wedding, Profile } from '../types/database'
 import { useTaskTree } from '../hooks/useTasks'
+import { useCollaborators } from '../hooks/useCollaborators'
 import { ProgressBar } from './ui/ProgressBar'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
@@ -37,6 +38,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
   const d = tr.dashboard
 
   const { categories, isPending } = useTaskTree(wedding.id)
+  const { data: collaborators = [] } = useCollaborators(wedding.id)
   const { setActiveMainTab, openDrawer, language } = useUIStore()
   const locale = getLocale(language)
 
@@ -44,8 +46,10 @@ export function DashboardScreen({ wedding, profile }: Props) {
     const allSubs = categories.flatMap((c) => c.subtasks ?? [])
     const done = allSubs.filter((t) => t.status === 'done').length
     const total = allSubs.length
-    return { done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0 }
-  }, [categories])
+    const estimatedBudget = allSubs.reduce((s, t) => s + (t.estimated_cost ?? 0), 0)
+    const budgetPercent = wedding.budget_total ? Math.round((estimatedBudget / wedding.budget_total) * 100) : 0
+    return { done, total, percent: total > 0 ? Math.round((done / total) * 100) : 0, estimatedBudget, budgetPercent }
+  }, [categories, wedding.budget_total])
 
   const daysUntil = useMemo(() => {
     if (!wedding.date) return null
@@ -87,7 +91,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
   return (
     <div className="dashboard-page">
       {/* Hero */}
-      <div style={{ marginBottom: 36 }}>
+      <div style={{ marginBottom: 28 }}>
         <p className="font-mono-ui" style={{
           fontSize: 11, color: 'var(--ink-3)', marginBottom: 6,
           letterSpacing: '0.06em', textTransform: 'uppercase',
@@ -99,26 +103,46 @@ export function DashboardScreen({ wedding, profile }: Props) {
           {names[1] && <span style={{ fontStyle: 'italic', color: 'var(--accent)' }}>&amp;</span>}
           {names[1]}
         </p>
+
+        {/* Date separator */}
+        <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+          <span className="font-mono-ui" style={{
+            fontSize: 11, color: 'var(--ink-3)', whiteSpace: 'nowrap', letterSpacing: '0.01em'
+          }}>
+            {wedding.date ? new Date(wedding.date).toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'No date set'}
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
+        </div>
       </div>
 
       {/* Stat tiles row */}
       <div className="stat-tiles-grid">
         {/* Countdown hero cell */}
-        <div style={{ padding: '24px 20px', background: 'var(--bg-card)' }}>
-          <p className="font-mono-ui" style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+        <div style={{ padding: '30px 24px', background: 'var(--accent-soft)', position: 'relative', overflow: 'hidden', minHeight: 168, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          {/* Ghost watermark number */}
+          {daysUntil !== null && (
+            <div aria-hidden style={{
+              position: 'absolute', right: -12, bottom: -24,
+              fontFamily: 'var(--font-display)', fontSize: 'clamp(100px, 14vw, 190px)',
+              fontWeight: 700, fontStyle: 'italic', opacity: 0.08, lineHeight: 1,
+              color: 'var(--accent)', userSelect: 'none', pointerEvents: 'none', letterSpacing: '-0.02em'
+            }}>{daysUntil}</div>
+          )}
+          <p className="font-mono-ui" style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-ink)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
             {d.daysUntil}
           </p>
           {daysUntil !== null ? (
             <>
-              <p className="font-display" style={{ fontSize: 'clamp(40px, 7vw, 92px)', color: 'var(--ink)', marginTop: -4, lineHeight: 1 }}>
+              <p className="font-display" style={{ fontSize: 'clamp(52px, 6vw, 88px)', color: 'var(--accent)', marginTop: -4, lineHeight: 1, fontWeight: 700, fontStyle: 'italic', letterSpacing: '-0.03em' }}>
                 {daysUntil}
               </p>
-              <p style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 2 }}>
-                {daysUntil === 0 ? d.today : new Date(wedding.date!).toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              <p style={{ fontSize: 12, color: 'var(--accent-ink)', opacity: 0.65, marginTop: 14, letterSpacing: '0.01em' }}>
+                {d.daysUntil} · {new Date(wedding.date!).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
             </>
           ) : (
-            <p style={{ fontSize: 18, color: 'var(--ink-3)', marginTop: 8 }}>{d.notSet}</p>
+            <p style={{ fontSize: 18, color: 'var(--accent-ink)', marginTop: 8 }}>{d.notSet}</p>
           )}
         </div>
 
@@ -138,13 +162,13 @@ export function DashboardScreen({ wedding, profile }: Props) {
           sub={`${inProgressCategories} ${tr.board.inProgress.toLowerCase()}`}
           progress={Math.round(100 * completedCategories / Math.max(1, categories.length))}
         />
-        {/* Tasks tile */}
+        {/* Budget tile */}
         <StatTile
-          label={d.urgentTasks}
-          value={`${urgentTasks.length}`}
+          label={d.budget || 'Budget'}
+          value={`$${(stats.estimatedBudget / 1000).toFixed(0)}k`}
           unit=""
-          sub={urgentTasks.length === 0 ? d.noUrgent : `${urgentTasks.filter(t => isOverdue(t.due_date!)).length} ${d.overdue}`}
-          progress={0}
+          sub={`${stats.budgetPercent}% ${d.ofBudget || 'of budget'}`}
+          progress={Math.min(100, stats.budgetPercent)}
           last
         />
       </div>
@@ -219,49 +243,85 @@ export function DashboardScreen({ wedding, profile }: Props) {
           </div>
         </section>
 
-        {/* Right column — category progress */}
-        <aside>
-          <SectionHeader title={d.categoryProgress} />
-          <div style={{
-            background: 'var(--bg-card)', borderRadius: 12,
-            border: '1px solid var(--line)', overflow: 'hidden',
-          }}>
-            {categories.slice(0, 7).map((cat, i) => {
-              const subs = cat.subtasks ?? []
-              const done = subs.filter((t) => t.status === 'done').length
-              const total = subs.length
-              const pct = total ? Math.round(100 * done / total) : 0
-              return (
-                <div key={cat.id} style={{
+        {/* Right column — team + activity */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          {/* Team section */}
+          <section>
+            <SectionHeader title="Your team" />
+            <div style={{
+              background: 'var(--bg-card)', borderRadius: 12,
+              border: '1px solid var(--line)', overflow: 'hidden',
+            }}>
+              {collaborators.slice(0, 5).map((person, i) => (
+                <div key={person.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 16px',
                   borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'baseline' }}>
-                    <button
-                      onClick={() => { setActiveMainTab('board' as any) }}
-                      style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'start' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink)')}
-                    >
-                      {(tr.categoryNames as Record<string, string>)[cat.title] ?? cat.title}
-                    </button>
-                    <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)', flexShrink: 0, marginInlineStart: 8 }}>{done}/{total}</span>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 999,
+                    background: `oklch(0.92 0.05 ${(person.id.charCodeAt(0) * 67) % 360})`,
+                    color: `oklch(0.4 0.1 ${(person.id.charCodeAt(0) * 67) % 360})`,
+                    display: 'grid', placeItems: 'center',
+                    fontSize: 12, fontWeight: 600,
+                  }}>
+                    {(person.name ?? '?').charAt(0).toUpperCase()}
                   </div>
-                  <ProgressBar value={pct} size="sm" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{person.name}</p>
+                    <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{person.role ?? 'Member'}</p>
+                  </div>
                 </div>
-              )
-            })}
-            {categories.length > 7 && (
-              <div style={{ padding: '10px 16px', borderTop: '1px solid var(--line-soft)' }}>
-                <button
-                  onClick={() => setActiveMainTab('board' as any)}
-                  style={{ fontSize: 13, color: 'var(--ink-3)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
-                >
-                  +{categories.length - 7} more →
-                </button>
-              </div>
-            )}
-          </div>
+              ))}
+              {collaborators.length > 5 && (
+                <div style={{ padding: '10px 16px', borderTop: '1px solid var(--line-soft)', fontSize: 13, color: 'var(--ink-3)' }}>
+                  +{collaborators.length - 5} more
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Recent activity section */}
+          <section>
+            <SectionHeader title="Recent activity" />
+            <div style={{
+              background: 'var(--bg-card)', borderRadius: 12,
+              border: '1px solid var(--line)', overflow: 'hidden',
+            }}>
+              {categories
+                .flatMap((c) => (c.subtasks ?? []).map((t) => ({ ...t, _cat: c })))
+                .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                .filter((t) => t.status !== 'done')
+                .slice(0, 5)
+                .map((task, i) => {
+                  const mins = Math.floor((Date.now() - new Date(task.updated_at).getTime()) / 60000)
+                  const relTime = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(mins / 1440)}d ago`
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={() => openDrawer(task.id)}
+                      style={{
+                        padding: '12px 16px',
+                        borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
+                        cursor: 'pointer', transition: 'background 120ms',
+                      }}
+                      onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
+                      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+                    >
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {task.title}
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>
+                          {(tr.categoryNames as Record<string, string>)[task._cat.title] ?? task._cat.title}
+                        </p>
+                        <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{relTime}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </section>
         </aside>
       </div>
     </div>

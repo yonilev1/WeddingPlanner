@@ -21,6 +21,7 @@
   --accent:      oklch(0.62 0.13 35);
   --accent-soft: oklch(0.95 0.02 35);
   --accent-ink:  oklch(0.42 0.13 35);
+  --accent-on:   white;
 
   /* Status tones */
   --ok:        oklch(0.62 0.09 150);
@@ -160,7 +161,7 @@
 /* Stat tiles — 4 col desktop, 2×2 mobile */
 .stat-tiles-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
   background: var(--line);
   gap: 1px;
   border-radius: 16px;

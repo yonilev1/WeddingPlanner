@@ -292,26 +292,28 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
             fontFamily: '"Instrument Serif", serif', fontSize: 16,
           }}>e</div>
           <div className="hidden sm:block leading-none">
-            <p className="font-display text-sm font-medium" style={{ color: 'var(--ink)' }}>everafter</p>
+            <p className="font-display text-sm font-medium" style={{ color: 'var(--ink)', fontStyle: 'italic' }}>everafter</p>
             <p className="font-mono-ui text-[10px] uppercase tracking-widest" style={{ color: 'var(--ink-4)' }}>
-              {wedding.name}
+              {wedding.name.replace(/\s*wedding\s*/i, '')}
             </p>
           </div>
         </div>
 
         {/* Nav tabs */}
-        <nav className="flex items-center gap-0.5" style={{ marginInlineStart: 4 }}>
+        <nav className="flex items-stretch gap-0" style={{ marginInlineStart: 4, alignSelf: 'stretch' }}>
           {NAV.map(([id, label, iconPath]) => {
             const active = activeMainTab === id
             return (
               <button
                 key={id}
                 onClick={() => setActiveMainTab(id as any)}
-                className="flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg transition-all"
+                className="flex items-center gap-1.5 px-3 text-xs font-medium transition-all"
                 style={{
                   color: active ? 'var(--ink)' : 'var(--ink-3)',
-                  background: active ? 'var(--bg-soft)' : 'transparent',
+                  background: 'transparent',
                   border: 'none', cursor: 'pointer',
+                  borderBottom: active ? '2px solid var(--ink)' : '2px solid transparent',
+                  display: 'inline-flex', alignItems: 'center',
                 }}
               >
                 <Icon d={iconPath} size={13} />
@@ -326,10 +328,10 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
         {/* Countdown chip */}
         {daysUntil !== null && (
           <div className="hidden lg:flex items-baseline gap-2 px-3 py-1.5 rounded-full"
-            style={{ background: 'var(--bg-soft)', border: '1px solid var(--line)' }}>
-            <span className="font-display tabular-nums text-base" style={{ color: 'var(--ink)' }}>{daysUntil}</span>
-            <span className="font-mono-ui text-[10px] uppercase tracking-widest" style={{ color: 'var(--ink-3)' }}>
-              days
+            style={{ background: 'var(--ink)', border: 'none' }}>
+            <span className="font-display tabular-nums text-base" style={{ color: 'var(--bg)', fontStyle: 'italic' }}>{daysUntil}</span>
+            <span className="font-mono-ui text-[10px] uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              days to go
             </span>
           </div>
         )}

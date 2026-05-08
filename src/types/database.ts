@@ -21,6 +21,7 @@ export interface Database {
           name: string
           date: string | null        // ISO date string (YYYY-MM-DD)
           share_code: string
+          budget_total: number | null
           created_at: string
         }
         Insert: {
@@ -28,6 +29,7 @@ export interface Database {
           name: string
           date?: string | null
           share_code?: string        // auto-generated if omitted
+          budget_total?: number | null
           created_at?: string
         }
         Update: {
@@ -35,6 +37,7 @@ export interface Database {
           name?: string
           date?: string | null
           share_code?: string
+          budget_total?: number | null
           created_at?: string
         }
       }
