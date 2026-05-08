@@ -1,5 +1,29 @@
 # Wedding Planner — Project Context
 
+## 0. Recent Session Summary (2026-05-08)
+
+**What was completed:**
+1. ✅ **Design overhaul implemented** — header styling (dark countdown pill, underline tabs, italic branding), dashboard redesign (hero date separator, budget stat tile, team/activity sections), responsive layouts
+2. ✅ **Admin system fully built** — role-based access control, member approval workflow, admin-only delete/edit, pending approval UI
+3. ✅ **TypeScript build fixed** — added `budget_total` field to Wedding type, added missing translation keys
+4. ✅ **Dev server running** — http://localhost:5177 ready for testing all features
+5. ✅ **Project documented** — this context.md file updated with architecture decisions, implementation details, and current status
+
+**What's left to do:**
+1. Run 4 SQL migrations in Supabase (003–006) to activate admin system and notifications
+2. End-to-end testing: design visual changes, admin approval flow, permissions
+3. Optional enhancements: OnboardingTour translation, budget total editing, email invites, avatars
+
+**Key files modified:**
+- `src/index.css` — CSS token updates, grid layout changes
+- `src/App.tsx` — header styling, nav tabs, countdown chip redesign
+- `src/components/DashboardScreen.tsx` — hero date separator, countdown tile ghost watermark, budget stat tile, team/activity sections
+- `src/components/CollaboratorPanel.tsx` — email invite card
+- `src/types/database.ts` — added `budget_total` to Wedding type
+- `src/i18n/translations.ts` — added `budget` and `ofBudget` translation keys
+
+---
+
 ## 1. Project Overview
 
 A collaborative wedding planning web app where couples and their planning team can:
@@ -113,12 +137,13 @@ src/
 └── main.tsx                     React root + QueryClientProvider
 
 supabase/migrations/
-├── 001_initial_schema.sql       Tables, indexes, RLS policies, triggers
-├── 002_seed_default_tasks.sql   seed_default_tasks() + trg_seed_default_tasks
+├── 001_initial_schema.sql       Tables, indexes, RLS policies, triggers ✅ APPLIED
+├── 002_seed_default_tasks.sql   seed_default_tasks() + trg_seed_default_tasks ✅ APPLIED
 ├── 003_rpc_find_wedding.sql     find_wedding_by_code() RPC for join-by-code ⚠️ PENDING IN SUPABASE
 ├── 003_budget_fields.sql        (extra budget fields migration)
 ├── 004_add_cost_columns.sql     estimated_cost / actual_cost columns on tasks ⚠️ PENDING IN SUPABASE
-└── 005_notifications.sql        notifications table + RLS + realtime ⚠️ PENDING IN SUPABASE
+├── 005_notifications.sql        notifications table + RLS + realtime ⚠️ PENDING IN SUPABASE
+└── 006_admin_system.sql         Admin roles, member status, approval workflow ⚠️ PENDING IN SUPABASE
 ```
 
 ### Key design decisions
@@ -189,21 +214,35 @@ The regex `/@([\w ]+)/g` with a space in the character class was too greedy (cap
 - **INSERT**: `wedding_id = get_user_wedding_id()` — only members of the same wedding can insert
 - **UPDATE**: own `user_id = auth.uid()` — for marking read
 
-## 7. Current State (as of 2026-05-07)
+## 7. Current State (as of 2026-05-08)
 
 **Core Features (Fully Implemented):**
 - Full database schema with RLS (migration 001)
 - Auto-seed of ~85 default tasks on wedding creation (migration 002)
 - Auth flow: sign up (with display name) + sign in
 - Onboarding: create new wedding or join via share code
-- Dashboard screen: editorial hero, countdown, stat tiles, per-category progress, urgent tasks
+- Dashboard screen: editorial hero with date separator line, countdown, stat tiles, per-category progress, urgent tasks
 - Task Board: category sidebar with progress, expandable task cards, subtask rows, Realtime sync
 - Task Detail Drawer: segmented status control, underline tabs, edit title/description, change priority/due date, comments, activity log
 - **Delete task** — in-place confirmation in drawer, DB cascade deletes subtasks
 - **Edit wedding settings** — `WeddingSettingsPanel` right-panel drawer
-- Top nav: wedding name, tab switcher, countdown chip, share code copy, notification bell, sign out
-- Collaborator Panel: online users, share code, wedding members
-- Budget Panel: budget tracker with per-category cost summaries, mobile responsive
+- Top nav: wedding name with italic "everafter" branding, underline-based tab switcher, dark countdown pill, share code copy, notification bell, sign out
+- Collaborator Panel: online users, share code, wedding members, email invite card
+- Budget Panel: budget tracker with per-category cost summaries, mobile responsive, budget stat tile on dashboard
+
+**Admin System (Fully Implemented):**
+- Member roles: `admin` and `member`
+- Member status: `pending` (awaiting approval) and `active` (full access)
+- **Admin capabilities:**
+  - Approve/reject pending members
+  - Promote members to admin / demote from admin
+  - Remove members from wedding
+  - Delete any task (non-admins cannot)
+  - Edit/delete any comment (users can edit/delete their own)
+- **Pending approval UI:** New members see "Waiting for admin approval" screen until approved
+- **Admin controls in CollaboratorPanel:** pending members list with approve/reject buttons, admin badges on members, member role/remove actions
+- **Admin gating:** settings gear button only visible to admins
+- Migration 006 with role/member_status columns and helper functions
 
 **Polish Features (Fully Implemented):**
 1. **@Mention in comments** — type `@Name` to tag a collaborator; dropdown autocomplete
@@ -221,9 +260,21 @@ The regex `/@([\w ]+)/g` with a space in the character class was too greedy (cap
 13. **Full i18n (en/fr/he)** — All components fully translated; no hardcoded English strings (except OnboardingTour)
 14. **Mobile responsive** — Stat tiles, budget tiles, dashboard layout all adapt via CSS media query classes
 
+**Design Overhaul (Fully Implemented):**
+- Dark countdown pill with white number in header (inverted from soft pill)
+- Underline-based tab navigation (active: `2px solid var(--ink)`, inactive: transparent)
+- Dashboard date separator line inline with wedding names
+- Countdown stat tile with accent-soft background + ghost watermark number (large italic display at 0.08 opacity)
+- Budget stat tile showing estimated total and percentage of budget
+- Dashboard right column: "Your team" section (first 5 collaborators with initials avatars), "Recent activity" section (5 latest updated tasks)
+- Email invite card in collaborators/people page
+- CSS token updates: `--accent-on: white`, stat-tiles-grid changed from `1.5fr` to `1.4fr` for wider countdown tile
+- All new sections styled with design tokens (oklch colors, responsive grids, hairline borders)
+
 **Build Status:**
-- Clean TypeScript build: 0 errors
+- Clean TypeScript build: 0 errors (fixed by adding `budget_total` to Wedding type)
 - `npm run build` succeeds (pre-existing bundle size warning only)
+- Dev server running on http://localhost:5177 (ports 5173–5176 were occupied)
 - Deployed to Vercel (auto-deploy from GitHub main branch)
 
 ## 8. Open Issues / Bugs
@@ -232,12 +283,14 @@ The regex `/@([\w ]+)/g` with a space in the character class was too greedy (cap
 - `003_rpc_find_wedding.sql` — must be run in Supabase SQL Editor (join-by-code RPC)
 - `004_add_cost_columns.sql` — must be run in Supabase SQL Editor (cost fields on tasks)
 - `005_notifications.sql` — **must be run** for @mention notifications to work; the `notifications` table does not exist in production yet
+- `006_admin_system.sql` — must be run in Supabase SQL Editor (admin roles and member status)
 
 **Known Limitations:**
 - **OnboardingTour not translated** — all 5 tour step strings are hardcoded English. Lower priority as it's a one-time first-run experience.
 - Activity log status values (todo/in_progress/done) are shown as raw DB enum strings since they come from the DB rather than being translated.
 - No error UI if Supabase env vars are missing (app silently fails to load).
 - Comments tab scroll: on very long comment lists the "Write a comment" form can be pushed off-screen.
+- **Budget total display:** Currently shows estimated budget calculated from task costs; actual `budget_total` from wedding row should be set via settings (not yet implemented in WeddingSettingsPanel UI)
 
 **Previously Resolved:**
 - ~~RLS violation on `weddings` table~~ — resolved with corrected policies
@@ -249,21 +302,46 @@ The regex `/@([\w ]+)/g` with a space in the character class was too greedy (cap
 - ~~Month names always English in HeatmapView~~ — locale-aware formatting added
 - ~~Cost inputs stale after realtime update~~ — controlled inputs with `useEffect` sync
 - ~~`inputCls` TS errors in FilterBar~~ — replaced string className with `inputStyle` object
+- ~~TypeScript error: `budget_total` missing from Wedding type~~ — added field to Row, Insert, Update types
+- ~~Translation keys missing~~ — added `budget` and `ofBudget` to tr.dashboard for all languages
 
 ## 9. TODO / Next Steps
 
-**Pending Infrastructure (User must action):**
-1. Run `003_rpc_find_wedding.sql` in Supabase SQL Editor
-2. Run `004_add_cost_columns.sql` in Supabase SQL Editor
-3. **Run `005_notifications.sql` in Supabase SQL Editor** ← notifications won't work without this
-4. Fix Supabase Site URL (add `https://` prefix) in project settings
+**CRITICAL — Pending Infrastructure (User must action in Supabase):**
+1. ✅ `001_initial_schema.sql` — already applied
+2. ✅ `002_seed_default_tasks.sql` — already applied
+3. ⚠️ **Run `003_rpc_find_wedding.sql`** in Supabase SQL Editor (join-by-code functionality)
+4. ⚠️ **Run `004_add_cost_columns.sql`** in Supabase SQL Editor (cost tracking on tasks)
+5. ⚠️ **Run `005_notifications.sql`** in Supabase SQL Editor (notifications table + realtime)
+6. ⚠️ **Run `006_admin_system.sql`** in Supabase SQL Editor (admin roles + member approval)
+7. Fix Supabase Site URL (ensure `https://` prefix) in project settings
+
+**High Priority (Design/Functionality Testing):**
+8. **Test design overhaul:** Open dev server and verify:
+   - ✅ Header: dark countdown pill, underline tabs, italic branding
+   - ✅ Dashboard: date separator, countdown ghost watermark, budget stat tile
+   - ✅ Team section: displays first 5 collaborators with initials
+   - ✅ Recent activity: shows 5 latest updated tasks
+   - ✅ Email invite card: visible in collaborators panel
+   - Dark mode: all new sections render correctly
+   - Mobile/responsive: layout adapts at breakpoints
+9. **Test admin system end-to-end:**
+   - Create wedding (user becomes admin)
+   - Invite second user → appears as "pending"
+   - Admin approves → user gains access
+   - Admin promotes member to admin
+   - Admin removes member
+   - Non-admin sees no delete button, no settings
+   - Admin can edit/delete any comment
 
 **Medium Priority (Enhancements):**
-5. **Translate OnboardingTour** — 5 step titles/body strings need `en`/`fr`/`he` entries in `translations.ts`
-6. **Comments scroll fix** — sticky bottom form on long comment lists
-7. **Error UI** — graceful error message if Supabase env vars are missing
-8. **Email confirmation handling** — handle Supabase email verification flow
-9. **User avatar upload** — profile photos for collaborator list and comment avatars
+10. **Translate OnboardingTour** — 5 step titles/body strings need `en`/`fr`/`he` entries in `translations.ts`
+11. **Budget total editing** — add input field to `WeddingSettingsPanel` to set `wedding.budget_total`
+12. **Comments scroll fix** — sticky bottom form on long comment lists
+13. **Error UI** — graceful error message if Supabase env vars are missing
+14. **Email confirmation handling** — handle Supabase email verification flow
+15. **User avatar upload** — profile photos for collaborator list and comment avatars
+16. **Member invitation by email** — send invite links to non-collaborators via email
 
 ## 10. Implementation Notes
 
@@ -321,7 +399,93 @@ tr.heatmap       — HeatmapView
 tr.print         — PrintView
 ```
 
-## 11. Configuration & Deployment Notes
+## 11. Admin System Architecture
+
+### Database Changes (migration 006)
+- **profiles table:** Added columns:
+  - `role: 'admin' | 'member'` — controls permissions
+  - `member_status: 'pending' | 'active'` — controls access (pending users blocked by RLS)
+- **Helper function:** `is_wedding_admin()` checks `role = 'admin' AND member_status = 'active'`
+- **RLS policy updates:**
+  - `weddings` UPDATE: requires `is_wedding_admin()`
+  - `tasks` DELETE: requires `is_wedding_admin()`
+  - `comments` DELETE/UPDATE: allows own row OR `is_wedding_admin()`
+
+### Workflow
+1. **Create path:** User creates wedding → automatically becomes admin (`role='admin'`)
+2. **Join path:** User joins via share code → awaits approval (`member_status='pending'`)
+3. **Approval:** Admin sees pending member in CollaboratorPanel, clicks "Approve" → sets `member_status='active'`
+4. **Access control:** Pending members blocked from all views by RLS; settings gear hidden for non-admins
+
+### UI Components
+- **PendingApprovalScreen** (inline in App.tsx) — shown when user's `member_status='pending'`
+- **CollaboratorPanel** — enhanced with:
+  - "Pending Members" section (admin-only) with Approve/Reject buttons
+  - Admin badges (crown icon) on members with admin role
+  - "Make Admin"/"Remove Admin" buttons (non-admins invisible, can't demote last admin)
+  - "Remove from Event" buttons
+- **TaskDetailDrawer** — enhanced with:
+  - Comment Edit/Delete icons (visible to author or admin)
+  - Inline edit UI: textarea with Save/Cancel buttons
+  - Task delete button (admin-only)
+
+### Hooks
+- `useAdminActions()` — four mutations: `useApproveMember`, `useRejectMember`, `useRemoveMember`, `useSetMemberRole`
+- `useComments()` — extended with `useDeleteComment` and `useUpdateComment` mutations
+
+## 12. Design Overhaul — Visual Redesign (2026-05-07/08)
+
+### Header Updates
+- **Brand:** Added italic styling to "everafter" (fontStyle: 'italic')
+- **Nav tabs:** Changed from pill-style background to underline indicators
+  - Active: `borderBottom: '2px solid var(--ink)'`, text `var(--ink)`
+  - Inactive: `borderBottom: '2px solid transparent'`, text `var(--ink-3)`
+  - Removed background styling
+- **Countdown chip:** Inverted from soft pill to dark pill
+  - Background: `var(--ink)` (dark)
+  - Number: `var(--bg)` (white/light), italic
+  - Label: `rgba(255, 255, 255, 0.45)` (semi-transparent)
+  - Text: "days to go"
+
+### Dashboard Improvements
+- **Hero section:** Added inline date separator
+  - Layout: `flex` with flex:1 divs on either side of date
+  - Shows full wedding date (e.g., "May 15, 2026") centered
+- **Countdown tile:** Enhanced with design accent
+  - Background: `var(--accent-soft)` (terracotta soft)
+  - Layout: `flex` column with space-between for ghost watermark effect
+  - Ghost watermark: positioned absolutely bottom-right, large italic display font, opacity 0.08
+- **Budget stat tile:** New 4th stat tile replacing "Urgent Tasks"
+  - Shows: `$Xk` estimated total + `X% of budget`
+  - Includes progress bar showing budget utilization
+  - Calculated from sum of task `estimated_cost` values
+- **Right column redesign:** Replaced category-progress aside with two sections:
+  - **Your team:** Shows first 5 collaborators with colored initials avatars, name, role
+  - **Recent activity:** Shows top 5 tasks sorted by `updated_at` desc (non-done tasks), with relative timestamps
+
+### Styling Patterns
+- **CSS Grid:** Updated stat-tiles-grid from `grid-template-columns: 1.5fr 1fr 1fr 1fr` to `1.4fr 1fr 1fr 1fr` (wider countdown)
+- **Design tokens:** Added `--accent-on: white` for text on accent backgrounds
+- **Responsive:** All new grid layouts use `@media` blocks in index.css (no Tailwind classes)
+
+### Budget Panel Enhancement
+- New "Top line items" section at bottom
+- Shows top 8 tasks by `estimated_cost` (descending)
+- Each row: task title, category, `actual/estimated` amounts, paid/due pill
+- Rows clickable → opens TaskDetailDrawer
+
+### Collaborators Panel Enhancement
+- Added EmailInviteCard component before member list
+- Contains: email input + "Send invite" button
+- Button shows "Sent!" feedback for 2 seconds after click
+- QR code placeholder div (patterned background) next to share code
+
+### CSS Token Updates
+- `--accent-on: white` — text color for dark backgrounds
+- Updated dark mode variants for new sections in `.dark` class
+- No changes to color scale; all new styles use existing tokens
+
+## 13. Configuration & Deployment Notes
 
 - Supabase project URL and anon key live in `.env` as `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Not committed.
 - SQL migrations 001 and 002 have been applied. Migrations 003, 004, and 005 are pending.

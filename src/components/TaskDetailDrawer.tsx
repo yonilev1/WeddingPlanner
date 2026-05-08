@@ -385,6 +385,39 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
                 />
               </div>
 
+              {/* Assigned to */}
+              {collaborators.length > 0 && (
+                <div>
+                  <label style={fieldLabel}>{d.assignedTo}</label>
+                  <select
+                    value={task.assigned_to ?? ''}
+                    onChange={(e) => push({ assigned_to: e.target.value || null })}
+                    style={inputStyle}
+                  >
+                    <option value="">{d.unassigned}</option>
+                    {collaborators.map(c => (
+                      <option key={c.id} value={c.id}>{c.name ?? c.id}</option>
+                    ))}
+                  </select>
+                  {task.assigned_to && (() => {
+                    const assignee = collaborators.find(c => c.id === task.assigned_to)
+                    if (!assignee) return null
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <div style={{
+                          width: 20, height: 20, borderRadius: 999,
+                          background: 'var(--accent-soft)', color: 'var(--accent-ink)',
+                          display: 'grid', placeItems: 'center', fontSize: 9, fontWeight: 700,
+                        }}>
+                          {(assignee.name ?? '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>{assignee.name}</span>
+                      </div>
+                    )
+                  })()}
+                </div>
+              )}
+
               {/* Cost */}
               <div>
                 <label style={fieldLabel}>{d.budget}</label>

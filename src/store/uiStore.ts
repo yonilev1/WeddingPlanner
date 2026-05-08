@@ -3,7 +3,7 @@ import type { TaskStatus } from '../types/database'
 import { type Language, LANGUAGES } from '../i18n/translations'
 
 type Screen = 'auth' | 'onboarding' | 'pending' | 'app'
-type MainTab = 'dashboard' | 'board' | 'budget' | 'people'
+type MainTab = 'dashboard' | 'board' | 'budget' | 'people' | 'guests' | 'vendors'
 export type ViewMode = 'list' | 'heatmap'
 
 export interface FilterState {

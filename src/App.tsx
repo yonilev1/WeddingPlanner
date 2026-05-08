@@ -17,6 +17,8 @@ import { OnboardingTour } from './components/OnboardingTour'
 import { useTranslation } from './i18n/useTranslation'
 import { LANGUAGES, type Language } from './i18n/translations'
 import { WeddingSettingsPanel } from './components/WeddingSettingsPanel'
+import { GuestListScreen } from './components/GuestListScreen'
+import { VendorScreen } from './components/VendorScreen'
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +44,8 @@ const ICONS = {
   users:    "M17 21a5 5 0 0 0-10 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21a5 5 0 0 0-7.5-4.33M2 21a5 5 0 0 1 7.5-4.33",
   signout:  "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1",
   bell:     "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0",
+  guests:   "M17 21a5 5 0 0 0-10 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21a5 5 0 0 0-5-5M1 21a5 5 0 0 1 5-5",
+  vendors:  "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10",
 }
 
 // ─── Spinner ──────────────────────────────────────────────────────────────────
@@ -234,7 +238,7 @@ function NotificationBell({ userId }: { userId: string }) {
 
 // ─── Main app shell ───────────────────────────────────────────────────────────
 
-type MainTab = 'dashboard' | 'board' | 'budget' | 'people'
+type MainTab = 'dashboard' | 'board' | 'budget' | 'people' | 'guests' | 'vendors'
 
 function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
   const tr = useTranslation()
@@ -268,9 +272,11 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
     : null
 
   const NAV: [MainTab, string, string][] = [
-    ['dashboard', n.overview,   ICONS.home],
-    ['board',     n.tasks,      ICONS.list],
+    ['dashboard', n.overview,      ICONS.home],
+    ['board',     n.tasks,         ICONS.list],
     ['budget',    n.budgetTracker, ICONS.wallet],
+    ['guests',    n.guests,        ICONS.guests],
+    ['vendors',   n.vendors,       ICONS.vendors],
     ['people',    n.peopleSharing, ICONS.users],
   ]
 
@@ -394,6 +400,12 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
         )}
         {activeMainTab === 'budget' && (
           <BudgetPanel categories={categories} onClose={() => setActiveMainTab('dashboard' as any)} asPage />
+        )}
+        {activeMainTab === 'guests' && (
+          <GuestListScreen weddingId={weddingId} />
+        )}
+        {activeMainTab === 'vendors' && (
+          <VendorScreen weddingId={weddingId} />
         )}
         {activeMainTab === 'people' && (
           <CollaboratorPanel

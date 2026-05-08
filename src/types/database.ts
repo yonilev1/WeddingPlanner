@@ -87,6 +87,7 @@ export interface Database {
           display_order: number
           estimated_cost: number | null
           actual_cost: number | null
+          assigned_to: string | null
           created_at: string
           updated_at: string
         }
@@ -102,6 +103,7 @@ export interface Database {
           display_order?: number
           estimated_cost?: number | null
           actual_cost?: number | null
+          assigned_to?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -117,6 +119,7 @@ export interface Database {
           display_order?: number
           estimated_cost?: number | null
           actual_cost?: number | null
+          assigned_to?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -172,6 +175,104 @@ export interface Database {
         Update: {
           id?: string
           read?: boolean
+        }
+      }
+
+      // ── guests ───────────────────────────────
+      guests: {
+        Row: {
+          id: string
+          wedding_id: string
+          name: string
+          email: string | null
+          rsvp_status: 'pending' | 'confirmed' | 'declined'
+          dietary: string | null
+          plus_one: boolean
+          plus_one_name: string | null
+          table_number: number | null
+          group_name: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          wedding_id: string
+          name: string
+          email?: string | null
+          rsvp_status?: 'pending' | 'confirmed' | 'declined'
+          dietary?: string | null
+          plus_one?: boolean
+          plus_one_name?: string | null
+          table_number?: number | null
+          group_name?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          wedding_id?: string
+          name?: string
+          email?: string | null
+          rsvp_status?: 'pending' | 'confirmed' | 'declined'
+          dietary?: string | null
+          plus_one?: boolean
+          plus_one_name?: string | null
+          table_number?: number | null
+          group_name?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+      }
+
+      // ── vendors ───────────────────────────────
+      vendors: {
+        Row: {
+          id: string
+          wedding_id: string
+          name: string
+          category: string
+          contact_name: string | null
+          email: string | null
+          phone: string | null
+          website: string | null
+          contract_status: 'none' | 'pending' | 'signed'
+          deposit_paid: boolean
+          deposit_amount: number | null
+          total_cost: number | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          wedding_id: string
+          name: string
+          category: string
+          contact_name?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          contract_status?: 'none' | 'pending' | 'signed'
+          deposit_paid?: boolean
+          deposit_amount?: number | null
+          total_cost?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          wedding_id?: string
+          name?: string
+          category?: string
+          contact_name?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          contract_status?: 'none' | 'pending' | 'signed'
+          deposit_paid?: boolean
+          deposit_amount?: number | null
+          total_cost?: number | null
+          notes?: string | null
+          created_at?: string
         }
       }
 
@@ -244,6 +345,8 @@ export type Task          = Tables<'tasks'>
 export type Comment       = Tables<'comments'>
 export type TaskActivity  = Tables<'task_activity'>
 export type Notification  = Tables<'notifications'>
+export type Guest         = Tables<'guests'>
+export type Vendor        = Tables<'vendors'>
 
 // Domain enum types (kept as string literals for DB compatibility)
 export type TaskStatus = 'todo' | 'in_progress' | 'done'
