@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import type { Guest } from '../types/database'
-import { useGuests, useAddGuest, useUpdateGuest, useDeleteGuest } from '../hooks/useGuests'
+import { useGuests, useAddGuest, useUpdateGuest, useDeleteGuest, useDeleteAllGuests, useBulkAddGuests } from '../hooks/useGuests'
 import { useTranslation } from '../i18n/useTranslation'
 import { useToast } from '../hooks/useToast'
 
 interface Props {
   weddingId: string
+  isAdmin?: boolean
 }
 
 type RsvpFilter = 'all' | 'confirmed' | 'declined' | 'pending'
@@ -55,7 +56,7 @@ const emptyGuest = (): Omit<Guest, 'id' | 'created_at'> & { id?: string; created
 
 type GuestDraft = ReturnType<typeof emptyGuest>
 
-export function GuestListScreen({ weddingId }: Props) {
+export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const tr = useTranslation()
   const g = tr.guests
   const toast = useToast()
@@ -64,6 +65,8 @@ export function GuestListScreen({ weddingId }: Props) {
   const addGuest = useAddGuest()
   const updateGuest = useUpdateGuest()
   const deleteGuest = useDeleteGuest()
+  const deleteAllGuests = useDeleteAllGuests()
+  const bulkAddGuests = useBulkAddGuests()
 
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<RsvpFilter>('all')
@@ -71,7 +74,12 @@ export function GuestListScreen({ weddingId }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<GuestDraft>(emptyGuest())
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkSaving, setBulkSaving] = useState(false)
+  const [bulkEntries, setBulkEntries] = useState<{ name: string; isCouple: boolean }[]>([])
 
   const rsvpLabels: Record<string, string> = {
     confirmed: g.confirmed,
@@ -147,6 +155,65 @@ export function GuestListScreen({ weddingId }: Props) {
     }
   }
 
+  async function handleDeleteAll() {
+    try {
+      await deleteAllGuests.mutateAsync(weddingId)
+      toast.success(g.deleteAllToast)
+    } catch {
+      toast.error(g.failedToast)
+    } finally {
+      setConfirmDeleteAll(false)
+    }
+  }
+
+  const COUPLE_PATTERN = /\band\b|\bund\b|\bet\b|\by\b|\boch\b|\bи\b|&|\sו[א-ת]/
+
+  function parseBulkEntries(text: string): { name: string; isCouple: boolean }[] {
+    return text
+      .split(/\n+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .map(name => ({ name, isCouple: COUPLE_PATTERN.test(name) }))
+  }
+
+  function handleBulkTextChange(text: string) {
+    setBulkText(text)
+    setBulkEntries(parseBulkEntries(text))
+  }
+
+  function toggleCouple(i: number) {
+    setBulkEntries(prev => prev.map((e, idx) => idx === i ? { ...e, isCouple: !e.isCouple } : e))
+  }
+
+  async function handleBulkImport() {
+    if (bulkEntries.length === 0) { toast.error(g.bulkImportEmpty); return }
+    setBulkSaving(true)
+    try {
+      const guests = bulkEntries.map(({ name, isCouple }) => ({
+        wedding_id: weddingId,
+        name,
+        email: null,
+        rsvp_status: 'pending' as const,
+        dietary: null,
+        plus_one: isCouple,
+        plus_one_name: null,
+        table_number: null,
+        group_name: null,
+        notes: null,
+      }))
+      await bulkAddGuests.mutateAsync(guests)
+      const peopleCount = bulkEntries.reduce((sum, e) => sum + (e.isCouple ? 2 : 1), 0)
+      toast.success(g.bulkImportSuccess(peopleCount))
+      setBulkOpen(false)
+      setBulkText('')
+      setBulkEntries([])
+    } catch {
+      toast.error(g.failedToast)
+    } finally {
+      setBulkSaving(false)
+    }
+  }
+
   const FILTERS: [RsvpFilter, string][] = [
     ['all', g.filterAll],
     ['confirmed', g.filterConfirmed],
@@ -162,16 +229,55 @@ export function GuestListScreen({ weddingId }: Props) {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{g.title}</h1>
           <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>{g.subtitle}</p>
         </div>
-        <button
-          onClick={openAdd}
-          style={{
-            padding: '9px 18px', background: 'var(--accent)', color: 'white',
-            border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
-            cursor: 'pointer', flexShrink: 0,
-          }}
-        >
-          + {g.addGuest}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+          {isAdmin && guests.length > 0 && (
+            confirmDeleteAll ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '6px 12px', borderRadius: 10, background: 'var(--bad-soft, #fee2e2)', border: '1px solid var(--bad)' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bad)' }}>{g.deleteAllConfirm}</span>
+                <button
+                  onClick={handleDeleteAll}
+                  disabled={deleteAllGuests.isPending}
+                  style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 700 }}
+                >✓</button>
+                <button
+                  onClick={() => setConfirmDeleteAll(false)}
+                  style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
+                >✕</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDeleteAll(true)}
+                style={{
+                  padding: '9px 14px', background: 'transparent', color: 'var(--bad)',
+                  border: '1px solid var(--bad)', borderRadius: 10, fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                {g.deleteAll}
+              </button>
+            )
+          )}
+          <button
+            onClick={() => { setBulkText(''); setBulkOpen(true) }}
+            style={{
+              padding: '9px 18px', background: 'var(--bg-card)', color: 'var(--ink-2)',
+              border: '1px solid var(--line)', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            ↑ {g.importList}
+          </button>
+          <button
+            onClick={openAdd}
+            style={{
+              padding: '9px 18px', background: 'var(--accent)', color: 'white',
+              border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            + {g.addGuest}
+          </button>
+        </div>
       </div>
 
       {/* Stats tiles */}
@@ -319,6 +425,127 @@ export function GuestListScreen({ weddingId }: Props) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Bulk import modal */}
+      {bulkOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.4)',
+        }}
+          onClick={e => { if (e.target === e.currentTarget) { setBulkOpen(false) } }}
+        >
+          <div style={{
+            width: '100%', maxWidth: 580,
+            background: 'var(--bg-card)', borderRadius: '20px 20px 0 0',
+            padding: '24px 24px 32px',
+            maxHeight: '92vh', overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{g.bulkImportTitle}</h2>
+              <button onClick={() => setBulkOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--ink-3)', lineHeight: 1 }}>×</button>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 14 }}>{g.bulkImportHint}</p>
+
+            <textarea
+              value={bulkText}
+              onChange={e => handleBulkTextChange(e.target.value)}
+              placeholder={g.bulkImportPlaceholder}
+              rows={6}
+              autoFocus
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'var(--font-mono, monospace)', fontSize: 12 }}
+            />
+
+            {/* Per-row preview with couple toggle */}
+            {bulkEntries.length > 0 && (() => {
+              const peopleCount = bulkEntries.reduce((sum, e) => sum + (e.isCouple ? 2 : 1), 0)
+              return (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                    <p style={fieldLabel}>{g.bulkImportPreview}</p>
+                    <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
+                      {g.bulkImportCount(peopleCount)}
+                    </p>
+                  </div>
+                  <div style={{
+                    maxHeight: 240, overflowY: 'auto',
+                    background: 'var(--bg-soft)', borderRadius: 10,
+                    padding: '6px 8px',
+                    display: 'flex', flexDirection: 'column', gap: 4,
+                  }}>
+                    {bulkEntries.map((entry, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '7px 10px', borderRadius: 8,
+                        background: 'var(--bg-card)',
+                        border: `1px solid ${entry.isCouple ? 'var(--accent)' : 'var(--line)'}`,
+                      }}>
+                        {/* Couple toggle */}
+                        <button
+                          onClick={() => toggleCouple(i)}
+                          title={entry.isCouple ? g.bulkToggleSingle : g.bulkToggleCouple}
+                          style={{
+                            flexShrink: 0, width: 32, height: 28, borderRadius: 6,
+                            border: `1.5px solid ${entry.isCouple ? 'var(--accent)' : 'var(--line)'}`,
+                            background: entry.isCouple ? 'var(--accent)' : 'var(--bg-soft)',
+                            cursor: 'pointer', fontSize: 14, lineHeight: 1,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all 120ms',
+                          }}
+                        >
+                          {entry.isCouple ? '👫' : '👤'}
+                        </button>
+
+                        {/* Name */}
+                        <span style={{ flex: 1, fontSize: 13, color: 'var(--ink)', fontWeight: 500 }}>
+                          {entry.name}
+                        </span>
+
+                        {/* People count badge */}
+                        <span style={{
+                          flexShrink: 0, fontSize: 11, fontWeight: 700,
+                          padding: '2px 7px', borderRadius: 999,
+                          background: entry.isCouple ? 'var(--accent)' : 'var(--bg-soft)',
+                          color: entry.isCouple ? '#fff' : 'var(--ink-4)',
+                          border: entry.isCouple ? 'none' : '1px solid var(--line)',
+                        }}>
+                          {entry.isCouple ? '×2' : '×1'}
+                        </span>
+
+                        {/* Auto-detected label */}
+                        {entry.isCouple && COUPLE_PATTERN.test(entry.name) && (
+                          <span style={{ fontSize: 10, color: 'var(--accent)', flexShrink: 0, fontWeight: 600 }}>
+                            {g.bulkAutoDetected}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 20, justifyContent: 'flex-end' }}>
+              <button onClick={() => setBulkOpen(false)} style={{
+                padding: '9px 18px', background: 'var(--bg-soft)', color: 'var(--ink-2)',
+                border: '1px solid var(--line)', borderRadius: 10, fontSize: 13, cursor: 'pointer',
+              }}>{g.cancel}</button>
+              <button
+                onClick={handleBulkImport}
+                disabled={bulkSaving || bulkEntries.length === 0}
+                style={{
+                  padding: '9px 20px', background: 'var(--accent)', color: 'white',
+                  border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                  cursor: bulkSaving || bulkEntries.length === 0 ? 'not-allowed' : 'pointer',
+                  opacity: bulkSaving || bulkEntries.length === 0 ? 0.6 : 1,
+                }}
+              >
+                {bulkSaving ? g.bulkImportAdding : g.bulkImportAdd}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

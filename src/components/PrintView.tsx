@@ -1,5 +1,6 @@
 import type { TaskWithSubtasks } from '../types/database'
 import { useTranslation } from '../i18n/useTranslation'
+import { useTaskName } from '../i18n/useTaskName'
 import { useUIStore } from '../store/uiStore'
 
 interface Props {
@@ -13,6 +14,7 @@ const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-I
 export function PrintView({ categories, weddingName, onClose }: Props) {
   const tr = useTranslation()
   const p = tr.print
+  const taskName = useTaskName()
   const { language } = useUIStore()
   const locale = LOCALE_MAP[language] ?? 'en-US'
   const fmt = (d: string) =>
@@ -87,7 +89,7 @@ export function PrintView({ categories, weddingName, onClose }: Props) {
                           </svg>
                         )}
                       </span>
-                      <h2 className="text-base font-bold text-stone-800">{cat.title}</h2>
+                      <h2 className="text-base font-bold text-stone-800">{taskName(cat.title)}</h2>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-stone-400">
                       {cat.due_date && <span>{p.due}: {fmt(cat.due_date)}</span>}
@@ -123,7 +125,7 @@ export function PrintView({ categories, weddingName, onClose }: Props) {
                                   : 'text-stone-700'
                               }`}
                             >
-                              {sub.title}
+                              {taskName(sub.title)}
                             </span>
                             {sub.due_date && (
                               <span className="text-xs text-stone-400 flex-shrink-0 whitespace-nowrap">

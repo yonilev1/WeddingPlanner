@@ -34,6 +34,7 @@ import { PrintView } from './PrintView'
 import { useUIStore } from '../store/uiStore'
 import { supabase } from '../lib/supabase'
 import { useTranslation } from '../i18n/useTranslation'
+import { useTaskName } from '../i18n/useTaskName'
 
 interface Props {
   wedding: Wedding
@@ -122,12 +123,13 @@ function SortableSubtaskRow({
   const updateTask = useUpdateTask()
   const toast = useToast()
   const tr = useTranslation()
+  const taskName = useTaskName()
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation()
     const next = task.status === 'done' ? 'todo' : 'done'
     updateTask.mutate({ id: task.id, wedding_id: task.wedding_id, status: next, _prevTask: task })
-    if (next === 'done') toast.success(`"${task.title}" ${tr.board.markedComplete}`)
+    if (next === 'done') toast.success(`"${taskName(task.title)}" ${tr.board.markedComplete}`)
   }
 
   const overdue = task.due_date && task.status !== 'done' && new Date(task.due_date) < new Date()
@@ -172,7 +174,7 @@ function SortableSubtaskRow({
           textDecoration: task.status === 'done' ? 'line-through' : 'none',
         }}
       >
-        {task.title}
+        {taskName(task.title)}
       </span>
 
       <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">

@@ -1,9 +1,10 @@
-import type { TaskWithSubtasks } from '../types/database'
+import type { TaskWithSubtasks, Vendor } from '../types/database'
 import { useUIStore } from '../store/uiStore'
 import { useTranslation } from '../i18n/useTranslation'
 
 interface Props {
   categories: TaskWithSubtasks[]
+  vendors?: Vendor[]
   onClose: () => void
   asPage?: boolean
 }
@@ -19,7 +20,7 @@ function Legend({ color, label }: { color: string; label: string }) {
   )
 }
 
-export function BudgetPanel({ categories, onClose, asPage }: Props) {
+export function BudgetPanel({ categories, vendors = [], onClose, asPage }: Props) {
   const { openDrawer, language } = useUIStore()
   const tr = useTranslation()
   const b = tr.budget
@@ -30,8 +31,16 @@ export function BudgetPanel({ categories, onClose, asPage }: Props) {
 
   const categoryBudgets = categories.map((cat) => {
     const allTasks = [cat, ...(cat.subtasks ?? [])]
-    const estimated = allTasks.reduce((sum, t) => sum + (t.estimated_cost ?? 0), 0)
-    const actual = allTasks.reduce((sum, t) => sum + (t.actual_cost ?? 0), 0)
+    const taskEstimated = allTasks.reduce((sum, t) => sum + (t.estimated_cost ?? 0), 0)
+    const taskActual = allTasks.reduce((sum, t) => sum + (t.actual_cost ?? 0), 0)
+
+    // Add vendor costs linked to this category task
+    const vendorsForTask = vendors.filter(v => (v as any).task_id === cat.id)
+    const vendorEstimated = vendorsForTask.reduce((sum, v) => sum + (v.total_cost ?? 0), 0)
+    const vendorActual = vendorsForTask.reduce((sum, v) => sum + (v.deposit_paid ? (v.deposit_amount ?? 0) : 0), 0)
+
+    const estimated = taskEstimated + vendorEstimated
+    const actual = taskActual + vendorActual
     return { id: cat.id, title: cat.title, estimated, actual }
   }).filter((c) => c.estimated > 0 || c.actual > 0).sort((a, b) => b.estimated - a.estimated)
 

@@ -61,3 +61,31 @@ export function useDeleteGuest() {
     },
   })
 }
+
+export function useDeleteAllGuests() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (weddingId: string) => {
+      const { error } = await guestsTable().delete().eq('wedding_id', weddingId)
+      if (error) throw error
+      return { wedding_id: weddingId }
+    },
+    onSuccess: ({ wedding_id }) => {
+      qc.invalidateQueries({ queryKey: ['guests', wedding_id] })
+    },
+  })
+}
+
+export function useBulkAddGuests() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (guests: Omit<Guest, 'id' | 'created_at'>[]) => {
+      const { data, error } = await guestsTable().insert(guests).select()
+      if (error) throw error
+      return { data: data as Guest[], wedding_id: guests[0]?.wedding_id }
+    },
+    onSuccess: ({ wedding_id }) => {
+      if (wedding_id) qc.invalidateQueries({ queryKey: ['guests', wedding_id] })
+    },
+  })
+}

@@ -88,6 +88,10 @@ interface UIState {
   tourDone: boolean
   setTourDone: (v: boolean) => void
 
+  // Getting started checklist
+  gettingStartedCollapsed: boolean
+  setGettingStartedCollapsed: (v: boolean) => void
+
   // Print view
   printViewOpen: boolean
   setPrintViewOpen: (open: boolean) => void
@@ -168,6 +172,10 @@ export const useUIStore = create<UIState>()((set, get) => ({
     try { localStorage.setItem('weddingPlanner:tourDone', String(v)) } catch { /* noop */ }
     set({ tourDone: v })
   },
+
+  // Getting started checklist — session-only collapse (not persisted)
+  gettingStartedCollapsed: false,
+  setGettingStartedCollapsed: (v) => set({ gettingStartedCollapsed: v }),
 
   // Print view
   printViewOpen: false,

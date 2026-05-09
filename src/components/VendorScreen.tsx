@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Vendor } from '../types/database'
 import { useVendors, useAddVendor, useUpdateVendor, useDeleteVendor } from '../hooks/useVendors'
+import { useTaskTree } from '../hooks/useTasks'
 import { useTranslation } from '../i18n/useTranslation'
 import { useToast } from '../hooks/useToast'
 
@@ -34,7 +35,7 @@ const categoryEmoji: Record<CategoryKey, string> = {
   flowers: '💐', attire: '👗', transport: '🚗', other: '📋',
 }
 
-const emptyVendor = (): Omit<Vendor, 'id' | 'created_at'> => ({
+const emptyVendor = (): VendorDraft => ({
   wedding_id: '',
   name: '',
   category: 'other',
@@ -46,10 +47,11 @@ const emptyVendor = (): Omit<Vendor, 'id' | 'created_at'> => ({
   deposit_paid: false,
   deposit_amount: null,
   total_cost: null,
+  task_id: null,
   notes: null,
 })
 
-type VendorDraft = Omit<Vendor, 'id' | 'created_at'>
+type VendorDraft = Omit<Vendor, 'id' | 'created_at'> & { task_id: string | null }
 
 export function VendorScreen({ weddingId }: Props) {
   const tr = useTranslation()
@@ -57,6 +59,7 @@ export function VendorScreen({ weddingId }: Props) {
   const toast = useToast()
 
   const { data: vendors = [], isLoading } = useVendors(weddingId)
+  const { categories } = useTaskTree(weddingId)
   const addVendor = useAddVendor()
   const updateVendor = useUpdateVendor()
   const deleteVendor = useDeleteVendor()
@@ -110,7 +113,7 @@ export function VendorScreen({ weddingId }: Props) {
 
   function openEdit(vendor: Vendor) {
     setEditingId(vendor.id)
-    setDraft({ ...vendor })
+    setDraft({ ...vendor, task_id: (vendor as any).task_id ?? null })
     setFormOpen(true)
   }
 
@@ -389,6 +392,26 @@ export function VendorScreen({ weddingId }: Props) {
                 <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))} style={inputStyle}>
                   {CATEGORY_KEYS.map(k => (
                     <option key={k} value={k}>{categoryEmoji[k]} {catLabel(k)}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Link to task (optional) */}
+              <div>
+                <label style={fieldLabel}>Link to Task (Optional)</label>
+                <select
+                  value={draft.task_id ?? ''}
+                  onChange={e => setDraft(d => ({ ...d, task_id: e.target.value || null }))}
+                  style={inputStyle}
+                >
+                  <option value="">— No task linked —</option>
+                  {categories.map(cat => (
+                    <optgroup key={cat.id} label={cat.title}>
+                      <option value={cat.id}>{cat.title} (Category)</option>
+                      {(cat.subtasks ?? []).map(sub => (
+                        <option key={sub.id} value={sub.id}>&nbsp;&nbsp;{sub.title}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

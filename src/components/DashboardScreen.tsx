@@ -2,10 +2,13 @@ import { useMemo } from 'react'
 import type { Wedding, Profile } from '../types/database'
 import { useTaskTree } from '../hooks/useTasks'
 import { useCollaborators } from '../hooks/useCollaborators'
+import { useGuests } from '../hooks/useGuests'
+import { useVendors } from '../hooks/useVendors'
 import { ProgressBar } from './ui/ProgressBar'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
 import { useTranslation } from '../i18n/useTranslation'
+import { useTaskName } from '../i18n/useTaskName'
 
 interface Props {
   wedding: Wedding
@@ -36,10 +39,13 @@ function ChevronRight() {
 export function DashboardScreen({ wedding, profile }: Props) {
   const tr = useTranslation()
   const d = tr.dashboard
+  const taskName = useTaskName()
 
   const { categories, isPending } = useTaskTree(wedding.id)
   const { data: collaborators = [] } = useCollaborators(wedding.id)
-  const { setActiveMainTab, openDrawer, language } = useUIStore()
+  const { data: guests = [] } = useGuests(wedding.id)
+  const { data: vendors = [] } = useVendors(wedding.id)
+  const { setActiveMainTab, openDrawer, language, gettingStartedCollapsed, setGettingStartedCollapsed } = useUIStore()
   const locale = getLocale(language)
 
   const stats = useMemo(() => {
@@ -88,6 +94,52 @@ export function DashboardScreen({ wedding, profile }: Props) {
 
   const names = wedding.name.split('&')
 
+  const gettingStartedSteps = useMemo(() => [
+    {
+      id: 'date',
+      label: 'Set your wedding date',
+      done: !!wedding.date,
+      action: () => {/* settings panel — handled by admin button in nav */},
+      actionLabel: 'Go to settings',
+      hint: 'Everything else — countdowns, task due dates — depends on this.',
+    },
+    {
+      id: 'partner',
+      label: 'Invite your partner or planner',
+      done: collaborators.length > 1,
+      action: () => setActiveMainTab('people' as any),
+      actionLabel: 'Open People',
+      hint: 'Share the planning load — your partner can track and update tasks too.',
+    },
+    {
+      id: 'tasks',
+      label: 'Review your task checklist',
+      done: stats.done > 0,
+      action: () => setActiveMainTab('board' as any),
+      actionLabel: 'Go to Tasks',
+      hint: 'You already have 73 pre-loaded tasks. Mark your first one done.',
+    },
+    {
+      id: 'guests',
+      label: 'Add your guest list',
+      done: guests.length > 0,
+      action: () => setActiveMainTab('guests' as any),
+      actionLabel: 'Open Guest List',
+      hint: 'Import all guests at once — paste a list and the app does the rest.',
+    },
+    {
+      id: 'vendor',
+      label: 'Add your first vendor',
+      done: vendors.length > 0,
+      action: () => setActiveMainTab('vendors' as any),
+      actionLabel: 'Open Vendors',
+      hint: 'Log your venue, photographer, caterer — all in one place.',
+    },
+  ], [wedding.date, collaborators.length, stats.done, guests.length, vendors.length, setActiveMainTab])
+
+  const gsDone = gettingStartedSteps.filter(s => s.done).length
+  const gsAllDone = gsDone === gettingStartedSteps.length
+
   return (
     <div className="dashboard-page">
       {/* Hero */}
@@ -115,6 +167,146 @@ export function DashboardScreen({ wedding, profile }: Props) {
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
         </div>
       </div>
+
+      {/* Getting started — celebration when all done */}
+      {gsAllDone && (
+        <div style={{
+          marginBottom: 28, padding: '20px 24px',
+          background: 'linear-gradient(135deg, oklch(0.97 0.03 30), oklch(0.96 0.04 340))',
+          border: '1px solid var(--accent)',
+          borderRadius: 16,
+          display: 'flex', alignItems: 'center', gap: 16,
+        }}>
+          <div style={{ fontSize: 36, lineHeight: 1, flexShrink: 0 }}>💍</div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 3 }}>
+              You're all set up — now the real planning begins!
+            </p>
+            <p style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>
+              All the essentials are in place. Keep going — every task you check off brings you one step closer to the perfect day. ✨
+            </p>
+          </div>
+          <button
+            onClick={() => setActiveMainTab('board' as any)}
+            style={{
+              flexShrink: 0, padding: '9px 18px',
+              background: 'var(--accent)', color: 'white',
+              border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', whiteSpace: 'nowrap',
+            }}
+          >Keep going →</button>
+        </div>
+      )}
+
+      {/* Getting started checklist */}
+      {!gsAllDone && (
+        gettingStartedCollapsed ? (
+          /* Collapsed pill — always visible until all done */
+          <button
+            onClick={() => setGettingStartedCollapsed(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              marginBottom: 20, padding: '8px 14px',
+              background: 'var(--bg-card)', border: '1px solid var(--line)',
+              borderRadius: 999, cursor: 'pointer',
+              fontSize: 13, fontWeight: 600, color: 'var(--ink-2)',
+            }}
+          >
+            <div style={{ display: 'flex', gap: 3 }}>
+              {gettingStartedSteps.map(s => (
+                <div key={s.id} style={{
+                  width: 14, height: 4, borderRadius: 999,
+                  background: s.done ? 'var(--accent)' : 'var(--line)',
+                }} />
+              ))}
+            </div>
+            Getting started · {gsDone}/{gettingStartedSteps.length}
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M19 9l-7 7-7-7"/></svg>
+          </button>
+        ) : (
+          /* Expanded card */
+          <div style={{
+            marginBottom: 28,
+            background: 'var(--bg-card)',
+            border: '1px solid var(--line)',
+            borderRadius: 16,
+            overflow: 'hidden',
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--line)',
+              background: 'var(--accent-soft)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>Getting started</p>
+                  <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{gsDone} of {gettingStartedSteps.length} steps complete</p>
+                </div>
+                <div style={{ display: 'flex', gap: 3 }}>
+                  {gettingStartedSteps.map(s => (
+                    <div key={s.id} style={{
+                      width: 20, height: 4, borderRadius: 999,
+                      background: s.done ? 'var(--accent)' : 'var(--line)',
+                      transition: 'background 300ms',
+                    }} />
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => setGettingStartedCollapsed(true)}
+                title="Collapse"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', fontSize: 18, lineHeight: 1, padding: 4 }}
+              >×</button>
+            </div>
+
+            {/* Steps */}
+            <div>
+              {gettingStartedSteps.map((step, i) => (
+                <div key={step.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '14px 20px',
+                  borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
+                  opacity: step.done ? 0.55 : 1,
+                  transition: 'opacity 200ms',
+                }}>
+                  <div style={{
+                    flexShrink: 0, width: 22, height: 22, borderRadius: 999,
+                    border: `2px solid ${step.done ? 'var(--ok)' : 'var(--line)'}`,
+                    background: step.done ? 'var(--ok)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 200ms',
+                  }}>
+                    {step.done && (
+                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round">
+                        <path d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', textDecoration: step.done ? 'line-through' : 'none', marginBottom: 1 }}>
+                      {step.label}
+                    </p>
+                    {!step.done && <p style={{ fontSize: 12, color: 'var(--ink-4)' }}>{step.hint}</p>}
+                  </div>
+                  {!step.done && (
+                    <button
+                      onClick={step.action}
+                      style={{
+                        flexShrink: 0, padding: '6px 14px',
+                        background: 'var(--accent)', color: 'white',
+                        border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                        cursor: 'pointer', whiteSpace: 'nowrap',
+                      }}
+                    >{step.actionLabel}</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      )}
 
       {/* Stat tiles row */}
       <div className="stat-tiles-grid">
@@ -192,10 +384,26 @@ export function DashboardScreen({ wedding, profile }: Props) {
                 {tr.common.loading}
               </div>
             ) : urgentTasks.length === 0 ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}>
-                <p className="font-display" style={{ fontSize: 32, marginBottom: 8 }}>○</p>
-                <p style={{ fontSize: 14 }}>{d.noUrgent}</p>
-                <p style={{ fontSize: 13, color: 'var(--ink-4)', marginTop: 4 }}>{d.noUrgentHint}</p>
+              <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+                {stats.total === 0 ? (
+                  <>
+                    <p style={{ fontSize: 28, marginBottom: 10 }}>📋</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>No tasks yet</p>
+                    <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 16 }}>
+                      Your task list starts empty. Add your first category and task to get going.
+                    </p>
+                    <button
+                      onClick={() => setActiveMainTab('board' as any)}
+                      style={{ padding: '8px 18px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    >Go to Tasks →</button>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: 28, marginBottom: 10 }}>🎉</p>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>{d.noUrgent}</p>
+                    <p style={{ fontSize: 13, color: 'var(--ink-4)' }}>{d.noUrgentHint}</p>
+                  </>
+                )}
               </div>
             ) : urgentTasks.map((task, i) => {
               const overdue = task.due_date && isOverdue(task.due_date)
@@ -219,7 +427,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
                   }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {task.title}
+                      {taskName(task.title)}
                     </p>
                     <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>
                       {(tr.categoryNames as Record<string, string>)[task._category.title] ?? task._category.title}
@@ -288,12 +496,28 @@ export function DashboardScreen({ wedding, profile }: Props) {
               background: 'var(--bg-card)', borderRadius: 12,
               border: '1px solid var(--line)', overflow: 'hidden',
             }}>
-              {categories
-                .flatMap((c) => (c.subtasks ?? []).map((t) => ({ ...t, _cat: c })))
-                .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-                .filter((t) => t.status !== 'done')
-                .slice(0, 5)
-                .map((task, i) => {
+              {(() => {
+                const recentTasks = categories
+                  .flatMap((c) => (c.subtasks ?? []).map((t) => ({ ...t, _cat: c })))
+                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+                  .filter((t) => t.status !== 'done')
+                  .slice(0, 5)
+
+                if (recentTasks.length === 0) {
+                  return (
+                    <div style={{ padding: '28px 20px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 12 }}>
+                        No activity yet. Start by opening a task and updating its status.
+                      </p>
+                      <button
+                        onClick={() => setActiveMainTab('board' as any)}
+                        style={{ padding: '7px 16px', background: 'var(--bg-soft)', color: 'var(--ink-2)', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                      >Browse tasks →</button>
+                    </div>
+                  )
+                }
+
+                return recentTasks.map((task, i) => {
                   const mins = Math.floor((Date.now() - new Date(task.updated_at).getTime()) / 60000)
                   const relTime = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(mins / 1440)}d ago`
                   return (
@@ -309,7 +533,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
                       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
                     >
                       <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {task.title}
+                        {taskName(task.title)}
                       </p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>
@@ -319,7 +543,8 @@ export function DashboardScreen({ wedding, profile }: Props) {
                       </div>
                     </div>
                   )
-                })}
+                })
+              })()}
             </div>
           </section>
         </aside>

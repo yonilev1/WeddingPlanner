@@ -5,6 +5,7 @@ import { useTasks, useTaskTree } from './hooks/useTasks'
 import { useUIStore } from './store/uiStore'
 import { usePresence } from './hooks/usePresence'
 import { useNotifications, useMarkNotificationsRead } from './hooks/useNotifications'
+import { useVendors } from './hooks/useVendors'
 import { AuthScreen } from './components/AuthScreen'
 import { OnboardingScreen } from './components/OnboardingScreen'
 import { DashboardScreen } from './components/DashboardScreen'
@@ -247,6 +248,7 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
   const { data: wedding } = useWedding(weddingId)
   const { data: allTasks } = useTasks(weddingId)
   const { categories } = useTaskTree(weddingId)
+  const { data: vendors = [] } = useVendors(weddingId)
   const { profile, signOut } = useAuth()
   const {
     activeMainTab,
@@ -399,10 +401,10 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
           <TaskBoardScreen wedding={wedding} />
         )}
         {activeMainTab === 'budget' && (
-          <BudgetPanel categories={categories} onClose={() => setActiveMainTab('dashboard' as any)} asPage />
+          <BudgetPanel categories={categories} vendors={vendors} onClose={() => setActiveMainTab('dashboard' as any)} asPage />
         )}
         {activeMainTab === 'guests' && (
-          <GuestListScreen weddingId={weddingId} />
+          <GuestListScreen weddingId={weddingId} isAdmin={profile?.role === 'admin'} />
         )}
         {activeMainTab === 'vendors' && (
           <VendorScreen weddingId={weddingId} />

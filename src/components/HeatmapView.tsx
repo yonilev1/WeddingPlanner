@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { TaskWithSubtasks } from '../types/database'
 import { useUIStore } from '../store/uiStore'
 import { useTranslation } from '../i18n/useTranslation'
+import { useTaskName } from '../i18n/useTaskName'
 
 const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-IL' }
 
@@ -39,6 +40,7 @@ export function HeatmapView({ categories }: Props) {
   const { openDrawer, language } = useUIStore()
   const tr = useTranslation()
   const h = tr.heatmap
+  const taskName = useTaskName()
   const locale = LOCALE_MAP[language] ?? 'en-US'
 
   const today = new Date()
@@ -152,10 +154,10 @@ export function HeatmapView({ categories }: Props) {
                             <button
                               key={t.id}
                               onClick={() => openDrawer(t.id)}
-                              title={t.title}
+                              title={taskName(t.title)}
                               className={`w-full text-left px-1 py-0.5 rounded text-xs truncate leading-tight transition-opacity ${s.bg} ${s.text} ${t.status === 'done' ? 'opacity-40 line-through' : 'hover:opacity-80'}`}
                             >
-                              {t.title}
+                              {taskName(t.title)}
                             </button>
                           )
                         })}

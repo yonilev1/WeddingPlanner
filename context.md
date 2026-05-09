@@ -10,7 +10,7 @@
 5. ✅ **Task/Subtask Translation** — `useTaskName()` hook + `taskNames` map in translations.ts maps all 72 seeded English task titles to fr/he translations; user-created tasks fall back to raw title
 6. ✅ **Bulk Guest Import** — textarea paste, per-row preview, Hebrew `ו`/English `and`/`&` couple auto-detection, 👤/👫 toggle per row, correct people count
 7. ✅ **Getting Started checklist** — 5-step card on Dashboard; auto-detects completion from live data; collapses to pill (not permanently dismissed); disappears only when all 5 done; celebration banner on completion
-8. ✅ **Budget tracking** — users enter estimated and actual costs per task; BudgetPanel aggregates by category with spend bars and totals
+8. ✅ **Budget tracking** — users enter estimated and actual costs per task; vendors link to tasks; BudgetPanel aggregates task + vendor costs by category with spend bars and totals
 9. ✅ **Improved empty states** — Dashboard urgent tasks and recent activity show actionable prompts when empty
 10. ✅ **Admin-only Delete All Guests** — with inline confirm; per-row delete requires confirm (click ×→✓/✕)
 
@@ -18,6 +18,7 @@
 - `007_guests.sql` — guests table + RLS
 - `008_vendors.sql` — vendors table + RLS
 - `009_task_assignment.sql` — `assigned_to` column on tasks
+- `012_vendor_task_linking.sql` — `task_id` FK on vendors for budget integration
 
 ---
 
@@ -71,6 +72,9 @@ All tabs are rendered conditionally in App.tsx with `{activeMainTab === 'X' && <
 
 ### Task hierarchy
 Tasks are flat rows with a `parent_task_id` FK (NULL = category/top-level). The app organizes them client-side into `TaskWithSubtasks[]` via `useTaskTree()`.
+
+### Vendor-to-task linking
+Vendors optionally link to a task via `task_id` FK. When set, the vendor's `total_cost` is included in the BudgetPanel's category total. Users select a task (category or subtask) when editing a vendor. This bridges the vendor and budget systems.
 
 ### RLS + SECURITY DEFINER
 Every table has RLS. The helper `get_user_wedding_id()` (SECURITY DEFINER) is used in all policies to resolve the current user's wedding without exposing `profiles` directly. The seed trigger function also runs as SECURITY DEFINER to bypass RLS during the initial task seeding.
@@ -173,7 +177,7 @@ public/
 | `activity` | Task change log: task_id, user_id, field, old_value, new_value |
 | `notifications` | @mention notifications: user_id, wedding_id, task_id, message, read |
 | `guests` | Wedding guests: name, email, rsvp_status, dietary, plus_one, plus_one_name, table_number, group_name, notes |
-| `vendors` | Wedding vendors: name, category, contact info, contract_status, deposit_paid, costs, notes |
+| `vendors` | Wedding vendors: name, category, contact info, contract_status, deposit_paid, costs, notes, **task_id** (FK to tasks for budget linking) |
 
 ## 6. Key Architectural Decisions
 
@@ -293,6 +297,7 @@ All cost fields start empty. Users enter `estimated_cost` and `actual_cost` per 
 2. ⚠️ `008_vendors.sql`
 3. ⚠️ `009_task_assignment.sql`
 4. ⚠️ `011_clear_seeded_budgets.sql`
+5. ⚠️ `012_vendor_task_linking.sql`
 4. ⚠️ `010_seed_budget_estimates.sql`
 
 **High priority:**
