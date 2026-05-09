@@ -290,8 +290,8 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
           { label: g.plusOnes, value: plusOnes },
         ].map(({ label, value }) => (
           <div key={label} style={{ padding: '16px 20px', background: 'var(--bg-card)' }}>
-            <p style={{ fontSize: 24, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
-            <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 2, fontFamily: 'var(--font-mono, monospace)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+            <p className="font-display" style={{ fontSize: 32, fontWeight: 400, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+            <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
           </div>
         ))}
       </div>
@@ -346,7 +346,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
             borderBottom: '1px solid var(--line)',
           }}>
             {[g.name, 'RSVP', g.dietary, g.plusOne, g.tableNumber, g.group, ''].map((h, i) => (
-              <span key={i} style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono,monospace)' }}>
+              <span key={i} className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {h}
               </span>
             ))}
@@ -367,7 +367,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '')}
             >
               <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 1 }}>{guest.name}</p>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 1 }}>{guest.name}</p>
                 {guest.email && <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{guest.email}</p>}
               </div>
 

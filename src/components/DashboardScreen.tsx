@@ -426,7 +426,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
                     borderRadius: 999,
                   }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {taskName(task.title)}
                     </p>
                     <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>
@@ -532,7 +532,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
                       onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
                       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
                     >
-                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {taskName(task.title)}
                       </p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -583,7 +583,7 @@ function SectionHeader({ title, cta, onCta }: { title: string; cta?: string; onC
       display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
       marginBottom: 12, paddingInline: 4,
     }}>
-      <p className="font-display" style={{ fontSize: 22, color: 'var(--ink)' }}>{title}</p>
+      <p className="font-display" style={{ fontSize: 20, color: 'var(--ink)' }}>{title}</p>
       {cta && onCta && (
         <button
           onClick={onCta}

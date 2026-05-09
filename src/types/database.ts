@@ -346,7 +346,7 @@ export type Comment       = Tables<'comments'>
 export type TaskActivity  = Tables<'task_activity'>
 export type Notification  = Tables<'notifications'>
 export type Guest         = Tables<'guests'>
-export type Vendor        = Tables<'vendors'>
+export type Vendor        = Tables<'vendors'> & { task_id?: string | null }
 
 // Domain enum types (kept as string literals for DB compatibility)
 export type TaskStatus = 'todo' | 'in_progress' | 'done'

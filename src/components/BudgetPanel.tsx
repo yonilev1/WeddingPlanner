@@ -69,7 +69,7 @@ export function BudgetPanel({ categories, vendors = [], onClose, asPage }: Props
           { label: overBudget ? b.over : b.remaining, value: fmt(Math.abs(remaining)), tone: overBudget ? 'bad' : 'ok' },
         ].map((tile, i) => (
           <div key={i} style={{ padding: '20px 20px', background: 'var(--bg-card)' }}>
-            <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+            <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
               {tile.label}
             </p>
             <p className="font-display" style={{
@@ -114,7 +114,7 @@ export function BudgetPanel({ categories, vendors = [], onClose, asPage }: Props
       {/* By category */}
       {categoryBudgets.length > 0 && (
         <>
-          <p className="font-display" style={{ fontSize: 22, marginBottom: 12, color: 'var(--ink)' }}>{b.byCategory}</p>
+          <p className="font-display" style={{ fontSize: 20, marginBottom: 12, color: 'var(--ink)' }}>{b.byCategory}</p>
           <div style={{
             background: 'var(--bg-card)', border: '1px solid var(--line)',
             borderRadius: 12, overflow: 'hidden', marginBottom: 32,
@@ -122,11 +122,10 @@ export function BudgetPanel({ categories, vendors = [], onClose, asPage }: Props
             <div style={{
               display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr',
               padding: '10px 20px', borderBottom: '1px solid var(--line)',
-              fontSize: 11, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500,
             }}>
-              <span>Category</span>
-              <span style={{ textAlign: 'end' }}>{b.estimated}</span>
-              <span style={{ textAlign: 'end' }}>{b.spent}</span>
+              <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Category</span>
+              <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, textAlign: 'end' }}>{b.estimated}</span>
+              <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600, textAlign: 'end' }}>{b.spent}</span>
             </div>
             {categoryBudgets.map(({ id, title, estimated, actual }) => {
               const over = actual > estimated && estimated > 0
@@ -156,7 +155,7 @@ export function BudgetPanel({ categories, vendors = [], onClose, asPage }: Props
       {/* Top line items */}
       {allTasksWithCost.length > 0 && (
         <>
-          <p className="font-display" style={{ fontSize: 22, marginBottom: 12, color: 'var(--ink)' }}>{b.allLineItems}</p>
+          <p className="font-display" style={{ fontSize: 20, marginBottom: 12, color: 'var(--ink)' }}>{b.allLineItems}</p>
           <div style={{
             background: 'var(--bg-card)', border: '1px solid var(--line)',
             borderRadius: 12, overflow: 'hidden',

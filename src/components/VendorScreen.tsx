@@ -12,7 +12,6 @@ interface Props {
 const fieldLabel: React.CSSProperties = {
   display: 'block', fontSize: 10, fontWeight: 600, color: 'var(--ink-4)',
   letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6,
-  fontFamily: 'var(--font-mono, monospace)',
 }
 
 const inputStyle: React.CSSProperties = {
@@ -183,8 +182,8 @@ export function VendorScreen({ weddingId }: Props) {
           { label: v.totalBudget, value: fmt(totalBudget) },
         ].map(({ label, value }) => (
           <div key={label} style={{ padding: '16px 20px', background: 'var(--bg-card)' }}>
-            <p style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
-            <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 2, fontFamily: 'var(--font-mono, monospace)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+            <p className="font-display" style={{ fontSize: 32, fontWeight: 400, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+            <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
           </div>
         ))}
       </div>
