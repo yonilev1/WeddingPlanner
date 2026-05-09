@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { Vendor } from '../types/database'
@@ -6,7 +7,9 @@ import type { Vendor } from '../types/database'
 const vendorsTable = () => (supabase as any).from('vendors')
 
 export function useVendors(weddingId: string) {
-  return useQuery<Vendor[]>({
+  const qc = useQueryClient()
+
+  const query = useQuery<Vendor[]>({
     queryKey: ['vendors', weddingId],
     queryFn: async () => {
       const { data, error } = await vendorsTable()
@@ -18,6 +21,31 @@ export function useVendors(weddingId: string) {
     },
     enabled: !!weddingId,
   })
+
+  useEffect(() => {
+    if (!weddingId) return
+
+    const subscription = vendorsTable()
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendors',
+          filter: `wedding_id=eq.${weddingId}`,
+        },
+        () => {
+          qc.invalidateQueries({ queryKey: ['vendors', weddingId] })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [weddingId, qc])
+
+  return query
 }
 
 export function useAddVendor() {
