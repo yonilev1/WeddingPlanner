@@ -25,23 +25,37 @@ export function useVendors(weddingId: string) {
   useEffect(() => {
     if (!weddingId) return
 
-    const subscription = vendorsTable()
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'vendors',
-          filter: `wedding_id=eq.${weddingId}`,
-        },
-        () => {
-          qc.invalidateQueries({ queryKey: ['vendors', weddingId] })
-        }
-      )
-      .subscribe()
+    let subscription: any = null
+
+    try {
+      const vendorTable = vendorsTable()
+      if (!vendorTable?.on) {
+        console.debug('Vendor realtime subscription not available')
+        return
+      }
+
+      subscription = vendorTable
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'vendors',
+            filter: `wedding_id=eq.${weddingId}`,
+          },
+          () => {
+            qc.invalidateQueries({ queryKey: ['vendors', weddingId] })
+          }
+        )
+        .subscribe()
+    } catch (err) {
+      console.debug('Vendor subscription setup failed:', err)
+    }
 
     return () => {
-      subscription.unsubscribe()
+      if (subscription) {
+        subscription.unsubscribe().catch(() => {})
+      }
     }
   }, [weddingId, qc])
 

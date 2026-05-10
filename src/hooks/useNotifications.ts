@@ -25,15 +25,21 @@ export function useNotifications(userId: string | null | undefined) {
   // Realtime: new notifications pushed to this user
   useEffect(() => {
     if (!userId) return
-    const ch = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
-        () => qc.invalidateQueries({ queryKey: ['notifications', userId] })
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
+
+    try {
+      const ch = supabase
+        .channel(`notifications:${userId}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+          () => qc.invalidateQueries({ queryKey: ['notifications', userId] })
+        )
+        .subscribe()
+      return () => { supabase.removeChannel(ch) }
+    } catch (err) {
+      console.debug('Notification subscription setup failed:', err)
+      return undefined
+    }
   }, [userId, qc])
 
   return query
