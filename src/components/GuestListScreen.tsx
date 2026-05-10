@@ -23,23 +23,6 @@ const inputStyle: React.CSSProperties = {
   outline: 'none', boxSizing: 'border-box',
 }
 
-const rsvpColors: Record<string, { bg: string; color: string }> = {
-  confirmed: { bg: 'var(--ok)',   color: '#fff' },
-  declined:  { bg: 'var(--bad)',  color: '#fff' },
-  pending:   { bg: 'var(--warn)', color: '#fff' },
-}
-
-function RsvpPill({ status, label }: { status: string; label: string }) {
-  const c = rsvpColors[status] ?? { bg: 'var(--bg-soft)', color: 'var(--ink-3)' }
-  return (
-    <span style={{
-      display: 'inline-block', padding: '2px 8px', borderRadius: 999, fontSize: 11,
-      fontWeight: 600, background: c.bg, color: c.color,
-    }}>
-      {label}
-    </span>
-  )
-}
 
 const emptyGuest = (): Omit<Guest, 'id' | 'created_at'> & { id?: string; created_at?: string } => ({
   wedding_id: '',
@@ -92,11 +75,6 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
     }
   }, [guestFormOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const rsvpLabels: Record<string, string> = {
-    confirmed: g.confirmed,
-    declined:  g.declined,
-    pending:   g.pending,
-  }
 
   const filtered = guests.filter(guest => {
     if (filter !== 'all' && guest.rsvp_status !== filter) return false

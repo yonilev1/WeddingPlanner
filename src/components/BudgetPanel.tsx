@@ -11,14 +11,6 @@ interface Props {
 
 const LOCALE_MAP: Record<string, string> = { en: 'en-US', fr: 'fr-FR', he: 'he-IL' }
 
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--ink-3)' }}>
-      <span style={{ width: 10, height: 10, borderRadius: 3, background: color, border: '1px solid var(--line)', flexShrink: 0 }} />
-      {label}
-    </span>
-  )
-}
 
 export function BudgetPanel({ categories, vendors = [], onClose, asPage }: Props) {
   const { openDrawer, language } = useUIStore()
