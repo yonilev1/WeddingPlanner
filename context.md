@@ -1,6 +1,32 @@
 # Wedding Planner — Project Context
 
-## 0. Recent Session Summary (2026-05-10)
+## 0. Recent Session Summary
+
+### Session 3 (2026-05-10)
+**Major UI/UX features & analytics:**
+1. ✅ **Task assignment notifications** — when a task is assigned to a collaborator, they receive an instant in-app notification via Supabase Realtime
+2. ✅ **Assignee avatar on task rows** — SortableSubtaskRow displays a 24px initials circle badge showing who the task is assigned to; always visible (not hover-only on mobile)
+3. ✅ **"My task" highlight** — tasks assigned to the current user get a subtle accent-tinted background (6% opacity) for visual emphasis
+4. ✅ **Guest list PDF export** — "PDF" button in GuestListScreen header opens a print-ready HTML page with:
+   - Summary stats (Total / Confirmed / Declined / Pending / Attending incl. +1s)
+   - Full guest table (A-Z sorted): Name, +1, RSVP status (color-coded), Group, Table, Dietary, Email
+   - Color-coded RSVP column (green/red/amber)
+   - Alternating row shading for readability
+   - Uses browser's "Save as PDF" feature
+5. ✅ **Vercel Analytics** — `@vercel/analytics` installed and wired up in `main.tsx` for page view tracking
+
+**Key architectural additions (Session 3):**
+- Task assignment notification flow: `TaskDetailDrawer` → `useInsertNotifications()` → Supabase notifications table → realtime subscription on mobile
+- `SortableSubtaskRow` now accepts `collaborators` and `currentUserId` props for visual assignment feedback
+- `TaskBoardScreen` fetches collaborators + current user ID once at top level, passes down to all TaskCards and subtask rows
+- `printGuestList()` function generates clean HTML table with inline styling for PDF print-to-file
+
+**Design notes:**
+- Avatar shows initials in colored circle (accent blue when it's your task, soft grey otherwise)
+- Hover highlight only removes on mouseleave if task is NOT assigned to you (preserves tint for "my tasks")
+- Due date/priority badges still fade in on hover for desktop, always hidden on mobile to reduce clutter
+
+## 0A. Recent Session Summary (2026-05-10)
 
 ### Session 1 (2026-05-09)
 **What was completed:**
@@ -348,7 +374,7 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 - Deposit tracking: only counts `deposit_amount` if `deposit_paid = true`
 - Optional: `wedding.budget_total` can be set to track against a grand total (currently unused, acceptable for user-driven budgeting)
 
-## 10. Current State (as of 2026-05-10)
+## 10. Current State (as of 2026-05-10, end of Session 3)
 
 **All core features implemented and TypeScript-clean (0 errors):**
 
@@ -364,13 +390,18 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 | Vendor Directory with contract/deposit tracking | ✅ |
 | Vendor-to-task linking (vendors linked to category/subtasks for budget integration) | ✅ |
 | Task assignment to team members | ✅ |
+| Task assignment notifications + visual feedback | ✅ |
+| Assignee avatar badge on task rows (mobile-visible) | ✅ |
+| "My task" highlight (subtle accent tint) | ✅ |
 | @Mention in comments + in-app notifications | ✅ |
+| Guest list PDF export (summary + sorted table) | ✅ |
 | Admin system (roles, approval, permissions) | ✅ |
 | Heatmap calendar view | ✅ |
 | Print / export to PDF | ✅ |
 | Task translation (en/fr/he) for seeded tasks | ✅ |
 | Dark mode | ✅ |
 | PWA (installable) | ✅ |
+| Vercel Analytics (page views) | ✅ |
 | Getting Started checklist | ✅ |
 | Realtime multi-user sync with error guards | ✅ |
 | Mobile responsive (modal sizing, 48px+ touch targets, tablet breakpoint 900px) | ✅ |
@@ -425,28 +456,36 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 4. ⚠️ `012_vendor_task_linking.sql` — task_id FK for budget linking
 
 **High priority (UX gaps identified in audit):**
-1. **Responsive guest table** — create card-view for guests on mobile (currently grid collapses to hard-to-read columns)
-2. **Vendor linking visual indicator** — show small badge/icon on vendor cards when linked to a task
-3. **Plus-one relationship clarity** — improve visual distinction between main guest and plus-one (currently just small text)
-4. **Translate OnboardingTour** — add `en`/`fr`/`he` strings to `translations.ts`
-5. **Regenerate Supabase types** — after running 007/008/009 migrations, run `supabase gen types typescript` to remove `(supabase as any)` casts in useGuests/useVendors
-6. **Budget total field** — add input to `WeddingSettingsPanel` to save `wedding.budget_total` (optional; currently "remaining" is calculated as total_estimated - total_actual)
+1. **Multi-wedding support** — enable users to be collaborators on 2+ weddings; show wedding picker after login if user belongs to multiple weddings (currently: single `wedding_id` on profiles, joining new wedding overwrites old)
+2. **SMS/WhatsApp guest invitations** — add phone field to guests table + Twilio/WhatsApp API + RSVP link endpoint (user can text/WhatsApp guests a link to confirm attendance without app login)
+3. **Vendor linking visual indicator** — show small badge/icon on vendor cards when linked to a task
+4. **Plus-one relationship clarity** — improve visual distinction between main guest and plus-one (currently just small text)
+5. **Translate OnboardingTour** — add `en`/`fr`/`he` strings to `translations.ts`
+6. **Regenerate Supabase types** — after running 007/008/009 migrations, run `supabase gen types typescript` to remove `(supabase as any)` casts in useGuests/useVendors
+7. **Budget total field** — add input to `WeddingSettingsPanel` to save `wedding.budget_total` (optional; currently "remaining" is calculated as total_estimated - total_actual)
 
 **Medium priority:**
-7. **Comments scroll fix** — sticky/fixed bottom compose form on long comment lists
-8. **Email invitations** — send invite links to non-users via email (currently just share code copy)
-9. **User avatar upload** — profile photos in collaborator list and comment threads
-10. **Modal media queries to CSS** — move inline `@media` from vendor/guest modal styles to proper CSS class
-11. **Error UI** — graceful error page if VITE_SUPABASE_URL/ANON_KEY are missing
+8. **Comments scroll fix** — sticky/fixed bottom compose form on long comment lists
+9. **Email invitations** — send invite links to non-users via email (currently just share code copy)
+10. **User avatar upload** — profile photos in collaborator list and comment threads
+11. **Modal media queries to CSS** — move inline `@media` from vendor/guest modal styles to proper CSS class
+12. **Error UI** — graceful error page if VITE_SUPABASE_URL/ANON_KEY are missing
 
 **Nice to have:**
-12. **Guest table seating plan** — visual drag-and-drop table assignment view
-13. **Budget currency** — configurable currency symbol (currently hardcoded USD)
-14. **Export guest list** — CSV download of guest list with RSVP status
-15. **Vendor contract file upload** — attach PDFs to vendor records
-16. **Form data loss warning** — alert when closing a modal with unsaved form changes
+13. **Guest table seating plan** — visual drag-and-drop table assignment view
+14. **Budget currency** — configurable currency symbol (currently hardcoded USD)
+15. **Export guest list** — CSV download of guest list with RSVP status (note: PDF export ✅ already done)
+16. **Vendor contract file upload** — attach PDFs to vendor records
+17. **Form data loss warning** — alert when closing a modal with unsaved form changes
 
-**Completed this session (Session 2):**
+**Completed this session (Session 3):**
+- ✅ Task assignment notifications (realtime, Supabase insert)
+- ✅ Assignee avatar badge on task rows (24px initials circle, accent-tinted when assigned to you)
+- ✅ "My task" highlight (6% accent background tint)
+- ✅ Guest list PDF export (summary stats + A-Z sorted table with color-coded RSVP)
+- ✅ Vercel Analytics integration
+
+**Completed in Session 2:**
 - ✅ Removed seeded budget mock data
 - ✅ Implemented vendor-to-task linking for budget integration
 - ✅ Added realtime vendor subscription to sync budget updates instantly
@@ -467,9 +506,25 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 - Clicking a notification: `openDrawer(n.task_id)` + closes dropdown
 - Realtime INSERT subscription pushes new notifications instantly
 
+### Task Assignment & Notifications (Session 3)
+- **Assigning a task:** TaskDetailDrawer's "Assigned to" dropdown triggers `useInsertNotifications.mutate()` to insert a notification row in the DB
+- **Visual feedback:** `SortableSubtaskRow` displays a 24px avatar with assignee initials; accent-colored when assigned to current user
+- **Row highlight:** Tasks assigned to current user get a 6% accent-tinted background; tint persists on hover (not removed until mouseleave)
+- **Realtime delivery:** Notification subscription in `useNotifications` hook listens for INSERTs; notification bell updates in real-time
+
 ### Toast Notifications
 - Zustand store in `useToast.ts`; auto-dismiss 3s via setTimeout
 - Usage: `useToast().success(msg)` / `useToast().error(msg)`
+
+### Guest List PDF Export (Session 3)
+- Button appears in GuestListScreen header when `guests.length > 0`
+- `printGuestList()` function generates clean HTML with:
+  - Summary stats row (5 tiles: Total, Confirmed, Declined, Pending, Attending incl. +1s)
+  - Full table: Name | +1 | RSVP (color-coded green/red/amber) | Group | Table | Dietary | Email
+  - Guests sorted A-Z
+  - Alternating row shading for readability
+- Uses `window.open()` to create a new tab with the HTML; `window.print()` after 300ms delay for browser PDF save dialog
+- Supports browser's "Save as PDF" feature
 
 ### Bulk Guest Import
 - Textarea → split on newlines → per-entry preview with couple toggle

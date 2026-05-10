@@ -62,6 +62,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const [saving, setSaving] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkText, setBulkText] = useState('')
+  const [bulkGroup, setBulkGroup] = useState('')
   const [bulkSaving, setBulkSaving] = useState(false)
   const [bulkEntries, setBulkEntries] = useState<{ name: string; isCouple: boolean }[]>([])
 
@@ -93,7 +94,8 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const declined = guests.filter(g => g.rsvp_status === 'declined').length
   const pending = guests.filter(g => g.rsvp_status === 'pending').length
   const plusOnes = guests.filter(g => g.plus_one).length
-  const attending = confirmed + plusOnes
+  const confirmedPlusOnes = guests.filter(g => g.rsvp_status === 'confirmed' && g.plus_one).length
+  const attending = confirmed + confirmedPlusOnes
 
   function openAdd() {
     setEditingId(null)
@@ -187,7 +189,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
         plus_one: isCouple,
         plus_one_name: null,
         table_number: null,
-        group_name: null,
+        group_name: bulkGroup.trim() || null,
         notes: null,
       }))
       await bulkAddGuests.mutateAsync(guests)
@@ -195,12 +197,79 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
       toast.success(g.bulkImportSuccess(peopleCount))
       setBulkOpen(false)
       setBulkText('')
+      setBulkGroup('')
       setBulkEntries([])
     } catch {
       toast.error(g.failedToast)
     } finally {
       setBulkSaving(false)
     }
+  }
+
+  function printGuestList() {
+    const rsvpLabel = (status: string) =>
+      status === 'confirmed' ? 'Confirmed' : status === 'declined' ? 'Declined' : 'Pending'
+
+    const rows = guests
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(guest => `
+        <tr>
+          <td>${guest.name}</td>
+          <td>${guest.plus_one ? (guest.plus_one_name || '+1') : '—'}</td>
+          <td class="rsvp rsvp-${guest.rsvp_status}">${rsvpLabel(guest.rsvp_status)}</td>
+          <td>${guest.group_name ?? '—'}</td>
+          <td>${guest.table_number != null ? guest.table_number : '—'}</td>
+          <td>${guest.dietary ?? '—'}</td>
+          <td>${guest.email ?? '—'}</td>
+        </tr>
+      `).join('')
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <title>Guest List</title>
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; color: #1a1a1a; padding: 32px; }
+        h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+        .meta { font-size: 13px; color: #666; margin-bottom: 24px; }
+        .stats { display: flex; gap: 24px; margin-bottom: 24px; }
+        .stat { background: #f5f5f4; border-radius: 8px; padding: 10px 16px; }
+        .stat-val { font-size: 20px; font-weight: 700; }
+        .stat-lbl { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .05em; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666; padding: 8px 10px; border-bottom: 2px solid #e5e5e5; }
+        td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .rsvp { font-weight: 600; font-size: 11px; }
+        .rsvp-confirmed { color: #16a34a; }
+        .rsvp-declined { color: #dc2626; }
+        .rsvp-pending { color: #d97706; }
+        @media print { body { padding: 0; } }
+      </style>
+    </head><body>
+      <h1>Guest List</h1>
+      <p class="meta">Exported ${new Date().toLocaleDateString()} · ${guests.length} guests total</p>
+      <div class="stats">
+        <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Total</div></div>
+        <div class="stat"><div class="stat-val">${confirmed}</div><div class="stat-lbl">Confirmed</div></div>
+        <div class="stat"><div class="stat-val">${declined}</div><div class="stat-lbl">Declined</div></div>
+        <div class="stat"><div class="stat-val">${pending}</div><div class="stat-lbl">Pending</div></div>
+        <div class="stat"><div class="stat-val">${attending}</div><div class="stat-lbl">Attending (incl. +1s)</div></div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Name</th><th>+1</th><th>RSVP</th><th>Group</th><th>Table</th><th>Dietary</th><th>Email</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </body></html>`
+
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+    setTimeout(() => { win.print() }, 300)
   }
 
   const FILTERS: [RsvpFilter, string][] = [
@@ -246,8 +315,23 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
               </button>
             )
           )}
+          {guests.length > 0 && (
+            <button
+              onClick={printGuestList}
+              style={{
+                padding: '9px 14px', background: 'var(--bg-card)', color: 'var(--ink-2)',
+                border: '1px solid var(--line)', borderRadius: 10, fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <svg width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              PDF
+            </button>
+          )}
           <button
-            onClick={() => { setBulkText(''); setBulkOpen(true) }}
+            onClick={() => { setBulkText(''); setBulkGroup(''); setBulkEntries([]); setBulkOpen(true) }}
             style={{
               padding: '9px 18px', background: 'var(--bg-card)', color: 'var(--ink-2)',
               border: '1px solid var(--line)', borderRadius: 10, fontSize: 13, fontWeight: 600,
@@ -470,6 +554,16 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
               <button onClick={() => setBulkOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--ink-3)', lineHeight: 1 }}>×</button>
             </div>
             <p style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 14 }}>{g.bulkImportHint}</p>
+
+            <div style={{ marginBottom: 12 }}>
+              <label className="font-mono-ui" style={fieldLabel}>{g.group} <span style={{ fontSize: 10, color: 'var(--ink-4)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — applied to all)</span></label>
+              <input
+                value={bulkGroup}
+                onChange={e => setBulkGroup(e.target.value)}
+                placeholder={g.groupPlaceholder}
+                style={inputStyle}
+              />
+            </div>
 
             <textarea
               value={bulkText}
