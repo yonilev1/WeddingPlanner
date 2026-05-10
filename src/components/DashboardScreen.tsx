@@ -4,8 +4,6 @@ import { useTaskTree } from '../hooks/useTasks'
 import { useCollaborators } from '../hooks/useCollaborators'
 import { useGuests } from '../hooks/useGuests'
 import { useVendors } from '../hooks/useVendors'
-import { ProgressBar } from './ui/ProgressBar'
-import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
 import { useTranslation } from '../i18n/useTranslation'
 import { useTaskName } from '../i18n/useTaskName'
@@ -28,11 +26,19 @@ function fmtDate(iso: string, locale: string) {
   return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
 }
 
-function ChevronRight() {
+function Chevron() {
   return (
-    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
       <path d="M9 5l7 7-7 7" />
     </svg>
+  )
+}
+
+function Bar({ value, color = 'var(--accent)' }: { value: number; color?: string }) {
+  return (
+    <div style={{ height: 4, borderRadius: 999, background: 'var(--line)', overflow: 'hidden' }}>
+      <div style={{ width: `${Math.min(100, value)}%`, height: '100%', background: color, borderRadius: 999, transition: 'width 600ms ease' }} />
+    </div>
   )
 }
 
@@ -45,7 +51,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
   const { data: collaborators = [] } = useCollaborators(wedding.id)
   const { data: guests = [] } = useGuests(wedding.id)
   const { data: vendors = [] } = useVendors(wedding.id)
-  const { setActiveMainTab, openDrawer, language, gettingStartedCollapsed, setGettingStartedCollapsed } = useUIStore()
+  const { setActiveMainTab, openDrawer, language, gettingStartedCollapsed, setGettingStartedCollapsed, setGuestFormOpen } = useUIStore()
   const locale = getLocale(language)
 
   const stats = useMemo(() => {
@@ -92,14 +98,18 @@ export function DashboardScreen({ wedding, profile }: Props) {
   const greeting = hr < 12 ? 'Good morning' : hr < 18 ? 'Good afternoon' : 'Good evening'
   const firstName = profile.name?.split(' ')[0] ?? ''
 
-  const names = wedding.name.split('&')
+  // Parse couple names from "Name & Name" or similar formats
+  const weddingTitle = wedding.name.replace(/\s*'?s?\s+[Ww]edding\s*$/i, '')
+  const ampMatch = weddingTitle.match(/^(.*?)\s*[&]\s*(.+)$/)
+  const nameA = ampMatch ? ampMatch[1].trim() : weddingTitle
+  const nameB = ampMatch ? ampMatch[2].trim() : null
 
   const gettingStartedSteps = useMemo(() => [
     {
       id: 'date',
       label: 'Set your wedding date',
       done: !!wedding.date,
-      action: () => {/* settings panel — handled by admin button in nav */},
+      action: () => {/* settings panel */},
       actionLabel: 'Go to settings',
       hint: 'Everything else — countdowns, task due dates — depends on this.',
     },
@@ -117,7 +127,7 @@ export function DashboardScreen({ wedding, profile }: Props) {
       done: stats.done > 0,
       action: () => setActiveMainTab('board' as any),
       actionLabel: 'Go to Tasks',
-      hint: 'You already have 73 pre-loaded tasks. Mark your first one done.',
+      hint: 'You have pre-loaded tasks. Mark your first one done.',
     },
     {
       id: 'guests',
@@ -142,164 +152,122 @@ export function DashboardScreen({ wedding, profile }: Props) {
 
   return (
     <div className="dashboard-page">
-      {/* Hero */}
+
+      {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 28 }}>
         <p className="font-mono-ui" style={{
-          fontSize: 11, color: 'var(--ink-3)', marginBottom: 6,
-          letterSpacing: '0.06em', textTransform: 'uppercase',
+          fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase',
+          letterSpacing: '0.08em', marginBottom: 10,
         }}>
           {greeting}{firstName ? `, ${firstName}` : ''}
         </p>
-        <p className="font-display" style={{ fontSize: 'clamp(28px, 6vw, 56px)', lineHeight: 1.05, color: 'var(--ink)' }}>
-          {names[0] ?? wedding.name}
-          {names[1] && <span style={{ fontStyle: 'italic', color: 'var(--accent)' }}>&amp;</span>}
-          {names[1]}
-        </p>
+        <h1 className="font-display" style={{
+          fontSize: 'clamp(32px, 5.5vw, 62px)',
+          lineHeight: 1.05, color: 'var(--ink)',
+          display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '0 8px',
+        }}>
+          <span>{nameA}</span>
+          {nameB && <span style={{ fontStyle: 'italic', color: 'var(--accent)' }}>&amp;</span>}
+          {nameB && <span>{nameB}</span>}
+        </h1>
 
-        {/* Date separator */}
-        <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Ruled date separator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 14 }}>
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
-          <span className="font-mono-ui" style={{
-            fontSize: 11, color: 'var(--ink-3)', whiteSpace: 'nowrap', letterSpacing: '0.01em'
-          }}>
-            {wedding.date ? new Date(wedding.date).toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'No date set'}
+          <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)', whiteSpace: 'nowrap', letterSpacing: '0.04em' }}>
+            {wedding.date
+              ? new Date(wedding.date).toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()
+              : 'NO DATE SET'}
           </span>
           <div style={{ flex: 1, height: 1, background: 'var(--line)' }} />
         </div>
       </div>
 
-      {/* Getting started — celebration when all done */}
+      {/* ── Getting started ───────────────────────────────────────────────────── */}
       {gsAllDone && (
         <div style={{
           marginBottom: 28, padding: '20px 24px',
-          background: 'linear-gradient(135deg, oklch(0.97 0.03 30), oklch(0.96 0.04 340))',
-          border: '1px solid var(--accent)',
+          background: 'var(--accent-soft)',
+          border: '1px solid',
+          borderColor: 'oklch(0.88 0.04 35)',
           borderRadius: 16,
           display: 'flex', alignItems: 'center', gap: 16,
         }}>
-          <div style={{ fontSize: 36, lineHeight: 1, flexShrink: 0 }}>💍</div>
+          <div style={{ fontSize: 32, lineHeight: 1, flexShrink: 0 }}>💍</div>
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 3 }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 3 }}>
               You're all set up — now the real planning begins!
             </p>
-            <p style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>
-              All the essentials are in place. Keep going — every task you check off brings you one step closer to the perfect day. ✨
+            <p style={{ fontSize: 13, color: 'var(--accent-ink)', lineHeight: 1.5, opacity: 0.8 }}>
+              All the essentials are in place. Keep going — every task you check off brings you closer to the perfect day.
             </p>
           </div>
           <button
             onClick={() => setActiveMainTab('board' as any)}
-            style={{
-              flexShrink: 0, padding: '9px 18px',
-              background: 'var(--accent)', color: 'white',
-              border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
+            style={{ flexShrink: 0, padding: '9px 18px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
           >Keep going →</button>
         </div>
       )}
 
-      {/* Getting started checklist */}
       {!gsAllDone && (
         gettingStartedCollapsed ? (
-          /* Collapsed pill — always visible until all done */
           <button
             onClick={() => setGettingStartedCollapsed(false)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              marginBottom: 20, padding: '8px 14px',
-              background: 'var(--bg-card)', border: '1px solid var(--line)',
-              borderRadius: 999, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20,
+              padding: '8px 14px', background: 'var(--bg-card)',
+              border: '1px solid var(--line)', borderRadius: 999, cursor: 'pointer',
               fontSize: 13, fontWeight: 600, color: 'var(--ink-2)',
             }}
           >
             <div style={{ display: 'flex', gap: 3 }}>
               {gettingStartedSteps.map(s => (
-                <div key={s.id} style={{
-                  width: 14, height: 4, borderRadius: 999,
-                  background: s.done ? 'var(--accent)' : 'var(--line)',
-                }} />
+                <div key={s.id} style={{ width: 14, height: 4, borderRadius: 999, background: s.done ? 'var(--accent)' : 'var(--line)' }} />
               ))}
             </div>
             Getting started · {gsDone}/{gettingStartedSteps.length}
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M19 9l-7 7-7-7"/></svg>
           </button>
         ) : (
-          /* Expanded card */
-          <div style={{
-            marginBottom: 28,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--line)',
-            borderRadius: 16,
-            overflow: 'hidden',
-          }}>
-            {/* Header */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '16px 20px',
-              borderBottom: '1px solid var(--line)',
-              background: 'var(--accent-soft)',
-            }}>
+          <div style={{ marginBottom: 28, background: 'var(--bg-card)', border: '1px solid var(--line)', borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--line)', background: 'var(--accent-soft)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>Getting started</p>
-                  <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{gsDone} of {gettingStartedSteps.length} steps complete</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>Getting started</p>
+                  <p style={{ fontSize: 12, color: 'var(--accent-ink)', opacity: 0.75 }}>{gsDone} of {gettingStartedSteps.length} steps complete</p>
                 </div>
                 <div style={{ display: 'flex', gap: 3 }}>
                   {gettingStartedSteps.map(s => (
-                    <div key={s.id} style={{
-                      width: 20, height: 4, borderRadius: 999,
-                      background: s.done ? 'var(--accent)' : 'var(--line)',
-                      transition: 'background 300ms',
-                    }} />
+                    <div key={s.id} style={{ width: 20, height: 4, borderRadius: 999, background: s.done ? 'var(--accent)' : 'var(--line)', transition: 'background 300ms' }} />
                   ))}
                 </div>
               </div>
-              <button
-                onClick={() => setGettingStartedCollapsed(true)}
-                title="Collapse"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', fontSize: 18, lineHeight: 1, padding: 4 }}
-              >×</button>
+              <button onClick={() => setGettingStartedCollapsed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
             </div>
-
-            {/* Steps */}
             <div>
               {gettingStartedSteps.map((step, i) => (
                 <div key={step.id} style={{
                   display: 'flex', alignItems: 'center', gap: 14,
-                  padding: '14px 20px',
+                  padding: '13px 20px',
                   borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
-                  opacity: step.done ? 0.55 : 1,
-                  transition: 'opacity 200ms',
+                  opacity: step.done ? 0.5 : 1, transition: 'opacity 200ms',
                 }}>
                   <div style={{
                     flexShrink: 0, width: 22, height: 22, borderRadius: 999,
                     border: `2px solid ${step.done ? 'var(--ok)' : 'var(--line)'}`,
                     background: step.done ? 'var(--ok)' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 200ms',
+                    display: 'grid', placeItems: 'center', transition: 'all 200ms',
                   }}>
-                    {step.done && (
-                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round">
-                        <path d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
+                    {step.done && <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={3} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', textDecoration: step.done ? 'line-through' : 'none', marginBottom: 1 }}>
-                      {step.label}
-                    </p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', textDecoration: step.done ? 'line-through' : 'none', marginBottom: 1 }}>{step.label}</p>
                     {!step.done && <p style={{ fontSize: 12, color: 'var(--ink-4)' }}>{step.hint}</p>}
                   </div>
                   {!step.done && (
-                    <button
-                      onClick={step.action}
-                      style={{
-                        flexShrink: 0, padding: '6px 14px',
-                        background: 'var(--accent)', color: 'white',
-                        border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                        cursor: 'pointer', whiteSpace: 'nowrap',
-                      }}
-                    >{step.actionLabel}</button>
+                    <button onClick={step.action} style={{ flexShrink: 0, padding: '6px 14px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      {step.actionLabel}
+                    </button>
                   )}
                 </div>
               ))}
@@ -308,98 +276,99 @@ export function DashboardScreen({ wedding, profile }: Props) {
         )
       )}
 
-      {/* Stat tiles row */}
-      <div className="stat-tiles-grid">
+      {/* ── Stat tiles ───────────────────────────────────────────────────────── */}
+      <div className="stat-tiles-grid" style={{ marginBottom: 24 }}>
         {/* Countdown hero cell */}
-        <div style={{ padding: '30px 24px', background: 'var(--accent-soft)', position: 'relative', overflow: 'hidden', minHeight: 168, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          {/* Ghost watermark number */}
+        <div style={{
+          padding: '24px 22px', background: 'var(--accent-soft)',
+          position: 'relative', overflow: 'hidden',
+          minHeight: 148, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        }}>
           {daysUntil !== null && (
-            <div aria-hidden style={{
-              position: 'absolute', right: -12, bottom: -24,
-              fontFamily: 'var(--font-display)', fontSize: 'clamp(100px, 14vw, 190px)',
-              fontWeight: 700, fontStyle: 'italic', opacity: 0.08, lineHeight: 1,
-              color: 'var(--accent)', userSelect: 'none', pointerEvents: 'none', letterSpacing: '-0.02em'
-            }}>{daysUntil}</div>
+            <span aria-hidden style={{
+              position: 'absolute', right: -10, bottom: -18,
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 'clamp(90px, 13vw, 160px)',
+              fontStyle: 'italic', opacity: 0.08, lineHeight: 1,
+              color: 'var(--accent)', userSelect: 'none', pointerEvents: 'none', letterSpacing: '-0.03em',
+            }}>{daysUntil}</span>
           )}
-          <p className="font-mono-ui" style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-ink)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
-            {d.daysUntil}
+          <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 500, color: 'var(--accent-ink)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Days until
           </p>
-          {daysUntil !== null ? (
-            <>
-              <p className="font-display" style={{ fontSize: 'clamp(52px, 6vw, 88px)', color: 'var(--accent)', marginTop: -4, lineHeight: 1, fontWeight: 700, fontStyle: 'italic', letterSpacing: '-0.03em' }}>
-                {daysUntil}
-              </p>
-              <p style={{ fontSize: 12, color: 'var(--accent-ink)', opacity: 0.65, marginTop: 14, letterSpacing: '0.01em' }}>
-                {d.daysUntil} · {new Date(wedding.date!).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
-            </>
-          ) : (
-            <p style={{ fontSize: 18, color: 'var(--accent-ink)', marginTop: 8 }}>{d.notSet}</p>
-          )}
+          <div>
+            {daysUntil !== null ? (
+              <>
+                <p className="font-display" style={{ fontSize: 'clamp(42px, 6vw, 68px)', lineHeight: 1, fontStyle: 'italic', color: 'var(--accent)', fontWeight: 600, marginBottom: 6 }}>
+                  {daysUntil}
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--accent-ink)', opacity: 0.7 }}>
+                  {new Date(wedding.date!).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 16, color: 'var(--accent-ink)' }}>Not set</p>
+            )}
+          </div>
         </div>
 
-        {/* Progress tile */}
-        <StatTile
-          label={d.overallProgress}
-          value={`${stats.percent}`}
-          unit="%"
-          sub={`${stats.done} / ${stats.total} ${d.tasks}`}
-          progress={stats.percent}
-        />
-        {/* Categories tile */}
-        <StatTile
-          label={d.categoryProgress}
-          value={`${completedCategories}`}
-          unit={`/ ${categories.length}`}
-          sub={`${inProgressCategories} ${tr.board.inProgress.toLowerCase()}`}
-          progress={Math.round(100 * completedCategories / Math.max(1, categories.length))}
-        />
-        {/* Budget tile */}
-        <StatTile
-          label={d.budget || 'Budget'}
-          value={`$${(stats.estimatedBudget / 1000).toFixed(0)}k`}
-          unit=""
-          sub={`${stats.budgetPercent}% ${d.ofBudget || 'of budget'}`}
-          progress={Math.min(100, stats.budgetPercent)}
-          last
-        />
+        {/* Progress */}
+        <StatTile label="Progress" value={`${stats.percent}`} unit="%" sub={`${stats.done} of ${stats.total} tasks`} progress={stats.percent} />
+        {/* Categories */}
+        <StatTile label="Categories" value={`${completedCategories}`} unit={`/ ${categories.length}`} sub={`${inProgressCategories} in progress`} progress={Math.round(100 * completedCategories / Math.max(1, categories.length))} color="var(--ok)" />
+        {/* Budget */}
+        <StatTile label="Budget" value={`$${(stats.estimatedBudget / 1000).toFixed(0)}k`} unit="" sub={wedding.budget_total ? `${stats.budgetPercent}% of $${(wedding.budget_total / 1000).toFixed(0)}k` : 'Set total in Settings'} progress={Math.min(100, stats.budgetPercent)} color={stats.budgetPercent > 90 ? 'var(--bad)' : 'var(--warn)'} />
       </div>
 
-      {/* Two-column below */}
+      {/* ── Quick actions ─────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 28 }}>
+        <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+          Quick actions
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { l: '+ Add task',    bg: 'var(--accent-soft)',  c: 'var(--accent-ink)', fn: () => setActiveMainTab('board' as any) },
+            { l: '+ Add guest',   bg: 'var(--ok-soft)',      c: 'var(--ok-ink)',     fn: () => { setActiveMainTab('guests' as any); setGuestFormOpen(true) } },
+            { l: 'View all tasks',bg: 'var(--bg-soft)',      c: 'var(--ink-2)',      fn: () => setActiveMainTab('board' as any) },
+            { l: 'Track budget',  bg: 'var(--bg-soft)',      c: 'var(--ink-2)',      fn: () => setActiveMainTab('budget' as any) },
+          ].map(({ l, bg, c, fn }) => (
+            <button key={l} onClick={fn} style={{
+              padding: '8px 16px', borderRadius: 999,
+              background: bg, color: c, border: 'none',
+              fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              transition: 'opacity 120ms',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
+              onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+            >{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Two-column ────────────────────────────────────────────────────────── */}
       <div className="dashboard-two-col">
 
-        {/* Upcoming / urgent list */}
+        {/* Upcoming tasks */}
         <section>
-          <SectionHeader
-            title={d.urgentTasks}
-            cta={d.viewAll}
-            onCta={() => setActiveMainTab('board' as any)}
-          />
-          <div style={{
-            background: 'var(--bg-card)', borderRadius: 12,
-            border: '1px solid var(--line)', overflow: 'hidden',
-          }}>
+          <SectionHeader title={d.urgentTasks ?? 'Upcoming tasks'} cta={d.viewAll} onCta={() => setActiveMainTab('board' as any)} />
+          <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--line)', overflow: 'hidden' }}>
             {isPending ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)', fontSize: 13 }}>
-                {tr.common.loading}
-              </div>
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)', fontSize: 13 }}>{tr.common.loading}</div>
             ) : urgentTasks.length === 0 ? (
-              <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+              <div style={{ padding: '36px 24px', textAlign: 'center' }}>
                 {stats.total === 0 ? (
                   <>
-                    <p style={{ fontSize: 28, marginBottom: 10 }}>📋</p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>No tasks yet</p>
-                    <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 16 }}>
-                      Your task list starts empty. Add your first category and task to get going.
-                    </p>
-                    <button
-                      onClick={() => setActiveMainTab('board' as any)}
-                      style={{ padding: '8px 18px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-                    >Go to Tasks →</button>
+                    <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--bg-soft)', margin: '0 auto 14px', display: 'grid', placeItems: 'center' }}>
+                      <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="var(--ink-4)" strokeWidth={1.5} strokeLinecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4" /></svg>
+                    </div>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>No tasks yet</p>
+                    <button onClick={() => setActiveMainTab('board' as any)} style={{ marginTop: 10, padding: '8px 18px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Go to Tasks →</button>
                   </>
                 ) : (
                   <>
-                    <p style={{ fontSize: 28, marginBottom: 10 }}>🎉</p>
+                    <div style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--ok-soft)', margin: '0 auto 14px', display: 'grid', placeItems: 'center' }}>
+                      <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="var(--ok-ink)" strokeWidth={2} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
+                    </div>
                     <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>{d.noUrgent}</p>
                     <p style={{ fontSize: 13, color: 'var(--ink-4)' }}>{d.noUrgentHint}</p>
                   </>
@@ -408,42 +377,34 @@ export function DashboardScreen({ wedding, profile }: Props) {
             ) : urgentTasks.map((task, i) => {
               const overdue = task.due_date && isOverdue(task.due_date)
               return (
-                <div
-                  key={task.id}
-                  onClick={() => openDrawer(task.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '14px 20px',
-                    borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
-                    cursor: 'pointer', transition: 'background 120ms',
-                  }}
+                <div key={task.id} onClick={() => openDrawer(task.id)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px',
+                  borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
+                  cursor: 'pointer', transition: 'background 120ms',
+                }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
                 >
-                  <div style={{
-                    width: 4, flexShrink: 0, alignSelf: 'stretch',
-                    background: overdue ? 'var(--bad)' : (task.priority ?? 0) >= 4 ? 'var(--accent)' : 'var(--line)',
-                    borderRadius: 999,
+                  {/* Priority dot */}
+                  <span style={{
+                    width: 7, height: 7, borderRadius: 999, flexShrink: 0,
+                    background: overdue ? 'var(--bad)' : (task.priority ?? 0) >= 5 ? 'var(--bad)' : (task.priority ?? 0) >= 4 ? 'var(--accent)' : 'var(--warn)',
                   }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: overdue ? 'var(--ink)' : 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 1 }}>
                       {taskName(task.title)}
                     </p>
-                    <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+                    <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>
                       {(tr.categoryNames as Record<string, string>)[task._category.title] ?? task._category.title}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                    <PriorityBadge priority={task.priority} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     {task.due_date && (
-                      <span className="font-mono-ui" style={{
-                        fontSize: 12,
-                        color: overdue ? 'var(--bad)' : 'var(--ink-3)',
-                      }}>
-                        {overdue ? `${d.overdue} · ` : ''}{fmtDate(task.due_date, locale)}
+                      <span className="font-mono-ui" style={{ fontSize: 11, color: overdue ? 'var(--bad)' : 'var(--ink-4)' }}>
+                        {fmtDate(task.due_date, locale)}
                       </span>
                     )}
-                    <span style={{ color: 'var(--ink-4)' }}><ChevronRight /></span>
+                    <span style={{ color: 'var(--ink-4)' }}><Chevron /></span>
                   </div>
                 </div>
               )
@@ -451,51 +412,48 @@ export function DashboardScreen({ wedding, profile }: Props) {
           </div>
         </section>
 
-        {/* Right column — team + activity */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-          {/* Team section */}
+        {/* Right column */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Team */}
           <section>
             <SectionHeader title="Your team" />
-            <div style={{
-              background: 'var(--bg-card)', borderRadius: 12,
-              border: '1px solid var(--line)', overflow: 'hidden',
-            }}>
-              {collaborators.slice(0, 5).map((person, i) => (
-                <div key={person.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '12px 16px',
-                  borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
-                }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 999,
-                    background: `oklch(0.92 0.05 ${(person.id.charCodeAt(0) * 67) % 360})`,
-                    color: `oklch(0.4 0.1 ${(person.id.charCodeAt(0) * 67) % 360})`,
-                    display: 'grid', placeItems: 'center',
-                    fontSize: 12, fontWeight: 600,
+            <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--line)', overflow: 'hidden' }}>
+              {collaborators.length === 0 ? (
+                <div style={{ padding: '24px 18px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 10 }}>No team members yet</p>
+                  <button onClick={() => setActiveMainTab('people' as any)} style={{ padding: '7px 16px', background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Invite partner →</button>
+                </div>
+              ) : collaborators.slice(0, 5).map((person, i) => {
+                const hue = (person.id.charCodeAt(0) * 67) % 360
+                return (
+                  <div key={person.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '11px 15px',
+                    borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
                   }}>
-                    {(person.name ?? '?').charAt(0).toUpperCase()}
+                    <div style={{
+                      width: 30, height: 30, borderRadius: 999, flexShrink: 0,
+                      background: `oklch(0.9 0.06 ${hue})`, color: `oklch(0.38 0.1 ${hue})`,
+                      display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 600,
+                    }}>
+                      {(person.name ?? '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{person.name}</p>
+                      <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{person.role ?? 'Member'}</p>
+                    </div>
+                    {person.role === 'admin' && (
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent-ink)' }}>Admin</span>
+                    )}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{person.name}</p>
-                    <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{person.role ?? 'Member'}</p>
-                  </div>
-                </div>
-              ))}
-              {collaborators.length > 5 && (
-                <div style={{ padding: '10px 16px', borderTop: '1px solid var(--line-soft)', fontSize: 13, color: 'var(--ink-3)' }}>
-                  +{collaborators.length - 5} more
-                </div>
-              )}
+                )
+              })}
             </div>
           </section>
 
-          {/* Recent activity section */}
+          {/* Recent activity */}
           <section>
             <SectionHeader title="Recent activity" />
-            <div style={{
-              background: 'var(--bg-card)', borderRadius: 12,
-              border: '1px solid var(--line)', overflow: 'hidden',
-            }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--line)', overflow: 'hidden' }}>
               {(() => {
                 const recentTasks = categories
                   .flatMap((c) => (c.subtasks ?? []).map((t) => ({ ...t, _cat: c })))
@@ -505,41 +463,30 @@ export function DashboardScreen({ wedding, profile }: Props) {
 
                 if (recentTasks.length === 0) {
                   return (
-                    <div style={{ padding: '28px 20px', textAlign: 'center' }}>
-                      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 12 }}>
-                        No activity yet. Start by opening a task and updating its status.
-                      </p>
-                      <button
-                        onClick={() => setActiveMainTab('board' as any)}
-                        style={{ padding: '7px 16px', background: 'var(--bg-soft)', color: 'var(--ink-2)', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                      >Browse tasks →</button>
+                    <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+                      <p style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 10 }}>No activity yet.</p>
+                      <button onClick={() => setActiveMainTab('board' as any)} style={{ padding: '7px 16px', background: 'var(--bg-soft)', color: 'var(--ink-2)', border: '1px solid var(--line)', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Browse tasks →</button>
                     </div>
                   )
                 }
 
                 return recentTasks.map((task, i) => {
                   const mins = Math.floor((Date.now() - new Date(task.updated_at).getTime()) / 60000)
-                  const relTime = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(mins / 1440)}d ago`
+                  const rel = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : mins < 1440 ? `${Math.floor(mins / 60)}h ago` : `${Math.floor(mins / 1440)}d ago`
                   return (
-                    <div
-                      key={task.id}
-                      onClick={() => openDrawer(task.id)}
-                      style={{
-                        padding: '12px 16px',
-                        borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
-                        cursor: 'pointer', transition: 'background 120ms',
-                      }}
+                    <div key={task.id} onClick={() => openDrawer(task.id)} style={{
+                      padding: '11px 15px', borderTop: i === 0 ? 'none' : '1px solid var(--line-soft)',
+                      cursor: 'pointer', transition: 'background 120ms',
+                    }}
                       onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
                       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
                     >
-                      <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>
                         {taskName(task.title)}
                       </p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>
-                          {(tr.categoryNames as Record<string, string>)[task._cat.title] ?? task._cat.title}
-                        </p>
-                        <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>{relTime}</span>
+                        <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{(tr.categoryNames as Record<string, string>)[task._cat.title] ?? task._cat.title}</p>
+                        <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)' }}>{rel}</span>
                       </div>
                     </div>
                   )
@@ -553,45 +500,37 @@ export function DashboardScreen({ wedding, profile }: Props) {
   )
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
+// ── Sub-components ──────────────────────────────────────────────────────────────
 
-function StatTile({ label, value, unit, sub, progress }: {
-  label: string; value: string; unit: string; sub: string; progress: number; last?: boolean
+function StatTile({ label, value, unit, sub, progress, color = 'var(--accent)' }: {
+  label: string; value: string; unit: string; sub: string; progress: number; color?: string; last?: boolean
 }) {
   return (
-    <div style={{
-      padding: '24px 20px',
-      background: 'var(--bg-card)',
-      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-    }}>
-      <p className="font-mono-ui" style={{ fontSize: 11, fontWeight: 500, color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>
+    <div style={{ padding: '22px 18px', background: 'var(--bg-card)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 500, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
         {label}
       </p>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 12 }}>
-        <span className="font-display" style={{ fontSize: 'clamp(28px, 4vw, 44px)', color: 'var(--ink)', lineHeight: 1 }}>{value}</span>
-        {unit && <span className="font-display" style={{ fontSize: 'clamp(16px, 2.5vw, 22px)', color: 'var(--ink-3)' }}>{unit}</span>}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginBottom: 9 }}>
+          <span className="font-display" style={{ fontSize: 'clamp(26px, 4vw, 42px)', lineHeight: 1, color: 'var(--ink)' }}>{value}</span>
+          {unit && <span style={{ fontSize: 15, color: 'var(--ink-3)' }}>{unit}</span>}
+        </div>
+        <Bar value={progress} color={color} />
+        <p style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 6 }}>{sub}</p>
       </div>
-      {progress > 0 && <ProgressBar value={progress} size="sm" />}
-      <p style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 8 }}>{sub}</p>
     </div>
   )
 }
 
 function SectionHeader({ title, cta, onCta }: { title: string; cta?: string; onCta?: () => void }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-      marginBottom: 12, paddingInline: 4,
-    }}>
-      <p className="font-display" style={{ fontSize: 20, color: 'var(--ink)' }}>{title}</p>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+      <h2 className="font-display" style={{ fontSize: 20, color: 'var(--ink)' }}>{title}</h2>
       {cta && onCta && (
-        <button
-          onClick={onCta}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--ink-3)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+        <button onClick={onCta} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--ink-4)', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 3 }}
           onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
-        >
-          {cta} <ChevronRight />
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-4)')}>
+          {cta} <Chevron />
         </button>
       )}
     </div>

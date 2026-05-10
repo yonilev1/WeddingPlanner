@@ -121,6 +121,7 @@ const t = {
       tipPress: 'Tip: press',
       toAddTasks: 'to add tasks',
       toSearch: 'to search',
+      filter: 'Filter',
     },
     drawer: {
       status: 'Status',
@@ -576,6 +577,7 @@ const t = {
       tipPress: 'Astuce : appuyez sur',
       toAddTasks: 'pour ajouter des tâches',
       toSearch: 'pour rechercher',
+      filter: 'Filtrer',
     },
     drawer: {
       status: 'Statut',
@@ -1031,6 +1033,7 @@ const t = {
       tipPress: 'טיפ: לחצו',
       toAddTasks: 'להוספת משימות',
       toSearch: 'לחיפוש',
+      filter: 'סינון',
     },
     drawer: {
       status: 'סטטוס',

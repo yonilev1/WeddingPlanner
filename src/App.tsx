@@ -307,8 +307,8 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
           </div>
         </div>
 
-        {/* Nav tabs */}
-        <nav className="flex items-stretch gap-0" style={{ marginInlineStart: 4, alignSelf: 'stretch' }}>
+        {/* Nav tabs — hidden on mobile (replaced by bottom nav) */}
+        <nav className="top-nav-tabs flex items-stretch gap-0" style={{ marginInlineStart: 4, alignSelf: 'stretch' }}>
           {NAV.map(([id, label, iconPath]) => {
             const active = activeMainTab === id
             return (
@@ -393,7 +393,7 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
       </header>
 
       {/* Content */}
-      <main className="flex-1 min-h-0 overflow-auto scrollbar-thin">
+      <main className="main-scroll flex-1 min-h-0 overflow-auto scrollbar-thin">
         {activeMainTab === 'dashboard' && profile && (
           <DashboardScreen wedding={wedding} profile={profile} />
         )}
@@ -441,6 +441,31 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
       {!tourDone && (
         <OnboardingTour onComplete={() => setTourDone(true)} />
       )}
+
+      {/* Mobile bottom nav */}
+      <nav className="bottom-nav">
+        {NAV.map(([id, label, iconPath]) => {
+          const active = activeMainTab === id
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveMainTab(id as any)}
+              style={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+                justifyContent: 'center', gap: 3, border: 'none', cursor: 'pointer',
+                background: 'transparent', padding: '6px 0',
+                color: active ? 'var(--ink)' : 'var(--ink-4)',
+                transition: 'color 120ms',
+              }}
+            >
+              <Icon d={iconPath} size={20} sw={active ? 2 : 1.5} />
+              <span style={{ fontSize: 9, fontWeight: active ? 700 : 400, letterSpacing: '0.02em', lineHeight: 1 }}>
+                {label}
+              </span>
+            </button>
+          )
+        })}
+      </nav>
     </div>
   )
 }

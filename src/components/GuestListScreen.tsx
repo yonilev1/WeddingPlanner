@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Guest } from '../types/database'
 import { useGuests, useAddGuest, useUpdateGuest, useDeleteGuest, useDeleteAllGuests, useBulkAddGuests } from '../hooks/useGuests'
 import { useTranslation } from '../i18n/useTranslation'
 import { useToast } from '../hooks/useToast'
+import { useUIStore } from '../store/uiStore'
 
 interface Props {
   weddingId: string
@@ -59,6 +60,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const tr = useTranslation()
   const g = tr.guests
   const toast = useToast()
+  const { guestFormOpen, setGuestFormOpen } = useUIStore()
 
   const { data: guests = [], isLoading } = useGuests(weddingId)
   const addGuest = useAddGuest()
@@ -79,6 +81,16 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const [bulkText, setBulkText] = useState('')
   const [bulkSaving, setBulkSaving] = useState(false)
   const [bulkEntries, setBulkEntries] = useState<{ name: string; isCouple: boolean }[]>([])
+
+  // Open add form when triggered from another screen (e.g. Dashboard quick action)
+  useEffect(() => {
+    if (guestFormOpen) {
+      setEditingId(null)
+      setDraft(emptyGuest())
+      setFormOpen(true)
+      setGuestFormOpen(false)
+    }
+  }, [guestFormOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const rsvpLabels: Record<string, string> = {
     confirmed: g.confirmed,
@@ -280,7 +292,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
       </div>
 
       {/* Stats tiles */}
-      <div className="stat-tiles-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', marginBottom: 28 }}>
+      <div className="stat-tiles-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', marginBottom: 20 }}>
         {[
           { label: g.total, value: total },
           { label: g.attending, value: attending },
@@ -294,6 +306,22 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
           </div>
         ))}
       </div>
+
+      {/* RSVP ratio bar */}
+      {total > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', height: 6, borderRadius: 999, overflow: 'hidden', gap: 2 }}>
+            {confirmed > 0 && <div style={{ flex: confirmed, background: 'var(--ok)', transition: 'flex 300ms' }} />}
+            {declined > 0 && <div style={{ flex: declined, background: 'var(--bad)', transition: 'flex 300ms' }} />}
+            {pending > 0 && <div style={{ flex: pending, background: 'var(--line)', transition: 'flex 300ms' }} />}
+          </div>
+          <div style={{ display: 'flex', gap: 16, marginTop: 6, fontSize: 11, color: 'var(--ink-4)' }}>
+            <span><span style={{ color: 'var(--ok)', fontWeight: 700 }}>{confirmed}</span> {g.filterConfirmed.toLowerCase()}</span>
+            <span><span style={{ color: 'var(--bad)', fontWeight: 700 }}>{declined}</span> {g.filterDeclined.toLowerCase()}</span>
+            <span><span style={{ color: 'var(--ink-3)', fontWeight: 700 }}>{pending}</span> {g.filterPending.toLowerCase()}</span>
+          </div>
+        </div>
+      )}
 
       {/* Filters + search */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -322,7 +350,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
         />
       </div>
 
-      {/* Guest list — desktop table / mobile cards */}
+      {/* Guest card grid — unified layout for all screen sizes */}
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--ink-3)' }}>…</div>
       ) : filtered.length === 0 ? (
@@ -332,185 +360,115 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
           <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>{g.noGuestsHint}</p>
         </div>
       ) : (
-        <>
-          {/* ── Desktop table (hidden on mobile) ── */}
-          <div className="guest-table-desktop" style={{
-            background: 'var(--bg-card)', borderRadius: 14,
-            border: '1px solid var(--line)', overflow: 'hidden',
-          }}>
-            {/* Table header */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1.8fr 1fr 1.2fr 0.6fr 0.6fr 0.7fr auto',
-              gap: '0 16px', padding: '10px 16px',
-              background: 'var(--bg-soft)',
-              borderBottom: '1px solid var(--line)',
+        <div className="guest-card-grid">
+          {filtered.map((guest) => {
+            // Avatar color derived from name
+            const hue = [...guest.name].reduce((h, c) => h + c.charCodeAt(0), 0) % 360
+            const initials = guest.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+            const rsvpBadge = {
+              confirmed: { bg: 'var(--ok-soft)', c: 'var(--ok-ink, var(--ok))', label: g.confirmed },
+              declined:  { bg: 'var(--bad-soft)', c: 'var(--bad-ink, var(--bad))', label: g.declined },
+              pending:   { bg: 'var(--warn-soft)', c: 'var(--warn-ink, var(--warn))', label: g.pending },
+            }[guest.rsvp_status] ?? { bg: 'var(--bg-soft)', c: 'var(--ink-3)', label: guest.rsvp_status }
+            return (
+            <div key={guest.id} style={{
+              background: 'var(--bg-card)', borderRadius: 14,
+              border: '1px solid var(--line)',
+              display: 'flex', flexDirection: 'column',
             }}>
-              {[g.name, 'RSVP', g.dietary, g.plusOne, g.tableNumber, g.group, ''].map((h, i) => (
-                <span key={i} className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  {h}
-                </span>
-              ))}
-            </div>
-
-            {/* Rows */}
-            {filtered.map((guest, idx) => (
-              <div
-                key={guest.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1.8fr 1fr 1.2fr 0.6fr 0.6fr 0.7fr auto',
-                  gap: '0 16px', padding: '12px 16px', alignItems: 'center',
-                  borderBottom: idx < filtered.length - 1 ? '1px solid var(--line-soft)' : 'none',
-                  transition: 'background 120ms',
-                }}
-                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
-                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '')}
-              >
-                <div>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 1 }}>{guest.name}</p>
-                  {guest.email && <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{guest.email}</p>}
-                </div>
-
-                <div>
-                  <RsvpPill status={guest.rsvp_status} label={rsvpLabels[guest.rsvp_status] ?? guest.rsvp_status} />
-                  {guest.plus_one_name && (
-                    <p style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 3 }}>+{guest.plus_one_name}</p>
-                  )}
-                </div>
-
-                <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{guest.dietary ?? '—'}</p>
-
-                <p style={{ fontSize: 12, color: guest.plus_one ? 'var(--ok)' : 'var(--ink-4)', textAlign: 'center' }}>
-                  {guest.plus_one ? '✓' : '—'}
-                </p>
-
-                <p style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'center' }}>
-                  {guest.table_number ?? '—'}
-                </p>
-
-                <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{guest.group_name ?? '—'}</p>
-
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <button
-                    onClick={() => openEdit(guest)}
-                    style={{
-                      padding: '8px 10px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
-                      background: 'var(--bg-soft)', color: 'var(--ink-3)',
-                      border: '1px solid var(--line)', fontWeight: 500,
-                    }}
-                  >
-                    {tr.admin.editComment}
-                  </button>
-                  {confirmDeleteId === guest.id ? (
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button
-                        onClick={() => handleDelete(guest.id)}
-                        style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 600 }}
-                      >✓</button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
-                      >✕</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDeleteId(guest.id)}
-                      style={{
-                        padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
-                        background: 'transparent', color: 'var(--bad)',
-                        border: '1px solid var(--line)',
-                      }}
-                    >×</button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Mobile cards (hidden on desktop) ── */}
-          <div className="guest-cards-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {filtered.map((guest) => (
-              <div key={guest.id} style={{
-                background: 'var(--bg-card)', borderRadius: 14,
-                border: '1px solid var(--line)', padding: '14px 16px',
-              }}>
-                {/* Top row: name + RSVP pill */}
+              {/* Card body */}
+              <div style={{ padding: '14px 16px', flex: 1 }}>
+                {/* Avatar row + RSVP badge */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.name}</p>
-                    {guest.email && <p style={{ fontSize: 12, color: 'var(--ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.email}</p>}
-                  </div>
-                  <div style={{ flexShrink: 0 }}>
-                    <RsvpPill status={guest.rsvp_status} label={rsvpLabels[guest.rsvp_status] ?? guest.rsvp_status} />
-                  </div>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 999, flexShrink: 0,
+                    background: `oklch(0.88 0.06 ${hue})`,
+                    color: `oklch(0.38 0.10 ${hue})`,
+                    display: 'grid', placeItems: 'center',
+                    fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em',
+                  }}>{initials}</div>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 999, background: rsvpBadge.bg, color: rsvpBadge.c, whiteSpace: 'nowrap' }}>
+                    {rsvpBadge.label}
+                  </span>
                 </div>
+                <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.name}</p>
+                {guest.email && <p style={{ fontSize: 11, color: 'var(--ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 8 }}>{guest.email}</p>}
 
-                {/* Meta row: dietary, +1, table, group */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginBottom: 12 }}>
+                {/* Meta chips */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', marginBottom: 10 }}>
                   {guest.dietary && (
-                    <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-                      <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginRight: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.dietary}:</span>
-                      {guest.dietary}
-                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--ink-3)', background: 'var(--bg-soft)', padding: '2px 7px', borderRadius: 999 }}>{guest.dietary}</span>
                   )}
                   {guest.plus_one && (
-                    <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>
+                    <span style={{ fontSize: 11, color: 'var(--ok-ink, var(--ok))', background: 'var(--ok-soft)', padding: '2px 7px', borderRadius: 999, fontWeight: 600 }}>
                       +1{guest.plus_one_name ? ` ${guest.plus_one_name}` : ''}
                     </span>
                   )}
                   {guest.table_number != null && (
-                    <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-                      <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginRight: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.tableNumber}:</span>
-                      {guest.table_number}
+                    <span style={{ fontSize: 11, color: 'var(--ink-3)', background: 'var(--bg-soft)', padding: '2px 7px', borderRadius: 999 }}>
+                      T{guest.table_number}
                     </span>
                   )}
                   {guest.group_name && (
-                    <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-                      <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginRight: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.group}:</span>
-                      {guest.group_name}
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => openEdit(guest)}
-                    style={{
-                      flex: 1, padding: '10px 0', minHeight: 44, fontSize: 13, borderRadius: 8, cursor: 'pointer',
-                      background: 'var(--bg-soft)', color: 'var(--ink-2)',
-                      border: '1px solid var(--line)', fontWeight: 600,
-                    }}
-                  >
-                    {tr.admin.editComment}
-                  </button>
-                  {confirmDeleteId === guest.id ? (
-                    <>
-                      <button
-                        onClick={() => handleDelete(guest.id)}
-                        style={{ flex: 1, padding: '10px 0', minHeight: 44, fontSize: 13, borderRadius: 8, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 700 }}
-                      >✓ {g.confirmDelete ?? 'Delete'}</button>
-                      <button
-                        onClick={() => setConfirmDeleteId(null)}
-                        style={{ padding: '10px 16px', minHeight: 44, fontSize: 13, borderRadius: 8, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
-                      >✕</button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmDeleteId(guest.id)}
-                      style={{
-                        padding: '10px 16px', minHeight: 44, minWidth: 44, fontSize: 16, borderRadius: 8, cursor: 'pointer',
-                        background: 'transparent', color: 'var(--bad)',
-                        border: '1px solid var(--line)',
-                      }}
-                    >×</button>
+                    <span style={{ fontSize: 11, color: 'var(--ink-3)', background: 'var(--bg-soft)', padding: '2px 7px', borderRadius: 999, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{guest.group_name}</span>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        </>
+
+              {/* Inline RSVP toggle — ✓ Yes / ? Pending / ✕ No */}
+              <div style={{ display: 'flex', borderTop: '1px solid var(--line-soft)', borderRadius: '0 0 14px 14px', overflow: 'hidden' }}>
+                {([
+                  { status: 'confirmed' as const, icon: '✓', lbl: 'Yes',     a: 'var(--ok)',   s: 'var(--ok-soft)' },
+                  { status: 'pending'   as const, icon: '?', lbl: 'Pending', a: 'var(--warn)', s: 'var(--warn-soft)' },
+                  { status: 'declined'  as const, icon: '✕', lbl: 'No',      a: 'var(--bad)',  s: 'var(--bad-soft)' },
+                ]).map(({ status, icon, lbl, a, s }) => {
+                  const active = guest.rsvp_status === status
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => updateGuest.mutate({ id: guest.id, wedding_id: weddingId, rsvp_status: status })}
+                      style={{
+                        flex: 1, padding: '9px 0', border: 'none', cursor: 'pointer',
+                        fontSize: 11, fontWeight: 600, transition: 'all 120ms',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                        background: active ? s : 'transparent',
+                        color: active ? a : 'var(--ink-4)',
+                        borderRight: '1px solid var(--line-soft)',
+                      }}
+                    >
+                      <span>{icon}</span><span>{lbl}</span>
+                    </button>
+                  )
+                })}
+                <button
+                  onClick={() => openEdit(guest)}
+                  style={{ padding: '9px 14px', border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--ink-4)', fontSize: 13, transition: 'color 120ms' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink)')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-4)')}
+                  title={tr.admin.editComment}
+                >
+                  <svg style={{ width: 13, height: 13 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 013.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
+                {confirmDeleteId === guest.id ? (
+                  <>
+                    <button onClick={() => handleDelete(guest.id)} style={{ padding: '9px 10px', border: 'none', cursor: 'pointer', background: 'var(--bad)', color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</button>
+                    <button onClick={() => setConfirmDeleteId(null)} style={{ padding: '9px 10px', border: 'none', cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', fontSize: 11 }}>✕</button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(guest.id)}
+                    style={{ padding: '9px 12px', border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--ink-4)', fontSize: 15, transition: 'color 120ms' }}
+                    onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--bad)')}
+                    onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--ink-4)')}
+                  >×</button>
+                )}
+              </div>
+            </div>
+            )
+          })}
+        </div>
       )}
 
       {/* Bulk import modal */}

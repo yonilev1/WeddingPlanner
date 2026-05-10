@@ -852,7 +852,7 @@ export function TaskBoardScreen({ wedding }: Props) {
             {/* Toolbar */}
             <div className="flex-shrink-0 px-4 sm:px-6 pt-5 pb-4 space-y-3">
               <div className="flex items-center gap-3">
-                {/* Mobile hamburger — shows at start (left in LTR, right in RTL) */}
+                {/* Mobile hamburger */}
                 <button
                   className="md:hidden p-2 -ms-1 text-stone-500 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-stone-700 rounded-xl transition-colors"
                   onClick={() => setSidebarOpen(true)}

@@ -61,55 +61,58 @@ export function BudgetPanel({ categories, vendors = [], onClose, asPage }: Props
         <p style={{ color: 'var(--ink-3)', marginTop: 4, fontSize: 14 }}>{b.subtitle}</p>
       </div>
 
-      {/* Summary tiles */}
-      <div className="budget-tiles-grid">
-        {[
-          { label: b.estimated, value: fmt(totalEstimated), tone: 'neutral' },
-          { label: b.spent,     value: fmt(totalActual),    tone: 'neutral' },
-          { label: overBudget ? b.over : b.remaining, value: fmt(Math.abs(remaining)), tone: overBudget ? 'bad' : 'ok' },
-        ].map((tile, i) => (
-          <div key={i} style={{ padding: '20px 20px', background: 'var(--bg-card)' }}>
-            <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
-              {tile.label}
-            </p>
-            <p className="font-display" style={{
-              fontSize: 'clamp(22px, 4vw, 36px)',
-              color: tile.tone === 'bad' ? 'var(--bad)' : tile.tone === 'ok' ? 'var(--ok)' : 'var(--ink)',
-            }}>{tile.value}</p>
-          </div>
-        ))}
-      </div>
+      {/* Budget overview: donut ring + tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 28, marginBottom: 32, alignItems: 'center' }}>
+        {/* Donut ring */}
+        {totalEstimated > 0 && (() => {
+          const pct = Math.min(1, totalActual / totalEstimated)
+          const r = 52
+          const circ = 2 * Math.PI * r
+          const dash = pct * circ
+          return (
+            <div style={{ position: 'relative', width: 140, height: 140, flexShrink: 0 }}>
+              <svg width="140" height="140" viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="70" cy="70" r={r} fill="none" stroke="var(--line)" strokeWidth="14" />
+                <circle
+                  cx="70" cy="70" r={r} fill="none"
+                  stroke={overBudget ? 'var(--bad)' : 'var(--accent)'}
+                  strokeWidth="14"
+                  strokeDasharray={`${dash} ${circ}`}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dasharray 600ms cubic-bezier(0.4,0,0.2,1)' }}
+                />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="font-display" style={{ fontSize: 24, color: overBudget ? 'var(--bad)' : 'var(--ink)', lineHeight: 1 }}>
+                  {Math.round(pct * 100)}%
+                </span>
+                <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {b.spent.toLowerCase()}
+                </span>
+              </div>
+            </div>
+          )
+        })()}
 
-      {/* Stacked bar */}
-      {totalEstimated > 0 && (
-        <div style={{
-          background: 'var(--bg-card)', border: '1px solid var(--line)',
-          borderRadius: 12, padding: 24, marginBottom: 32,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-            <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{b.spent} vs. {b.estimated}</p>
-            <span className="font-mono-ui" style={{ fontSize: 11, color: 'var(--ink-4)' }}>
-              {fmt(totalActual)} / {fmt(totalEstimated)}
-            </span>
-          </div>
-          <div style={{ position: 'relative', height: 20, background: 'var(--bg-soft)', borderRadius: 999, overflow: 'hidden' }}>
-            <div style={{
-              position: 'absolute', inset: 0,
-              width: `${Math.min(100, 100 * totalEstimated / (totalEstimated || 1))}%`,
-              background: 'var(--accent-soft)', transition: 'width 400ms',
-            }} />
-            <div style={{
-              position: 'absolute', insetBlock: 0, insetInlineStart: 0,
-              width: `${Math.min(100, 100 * totalActual / (totalEstimated || 1))}%`,
-              background: overBudget ? 'var(--bad)' : 'var(--accent)', transition: 'width 400ms',
-            }} />
-          </div>
-          <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
-            <Legend color="var(--accent)" label={b.spent} />
-            <Legend color="var(--accent-soft)" label={b.estimated} />
-          </div>
+        {/* Summary tiles */}
+        <div className="budget-tiles-grid" style={{ margin: 0 }}>
+          {[
+            { label: b.estimated, value: fmt(totalEstimated), tone: 'neutral' },
+            { label: b.spent,     value: fmt(totalActual),    tone: 'neutral' },
+            { label: overBudget ? b.over : b.remaining, value: fmt(Math.abs(remaining)), tone: overBudget ? 'bad' : 'ok' },
+          ].map((tile, i) => (
+            <div key={i} style={{ padding: '20px 20px', background: 'var(--bg-card)' }}>
+              <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
+                {tile.label}
+              </p>
+              <p className="font-display" style={{
+                fontSize: 'clamp(22px, 4vw, 36px)',
+                color: tile.tone === 'bad' ? 'var(--bad)' : tile.tone === 'ok' ? 'var(--ok)' : 'var(--ink)',
+              }}>{tile.value}</p>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
       {/* By category */}
       {categoryBudgets.length > 0 && (

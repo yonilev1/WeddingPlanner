@@ -96,6 +96,10 @@ interface UIState {
   printViewOpen: boolean
   setPrintViewOpen: (open: boolean) => void
 
+  // Guest form
+  guestFormOpen: boolean
+  setGuestFormOpen: (open: boolean) => void
+
   // Language
   language: Language
   setLanguage: (lang: Language) => void
@@ -180,6 +184,10 @@ export const useUIStore = create<UIState>()((set, get) => ({
   // Print view
   printViewOpen: false,
   setPrintViewOpen: (printViewOpen) => set({ printViewOpen }),
+
+  // Guest form
+  guestFormOpen: false,
+  setGuestFormOpen: (guestFormOpen) => set({ guestFormOpen }),
 
   // Language — persisted in localStorage; RTL applied to <html>
   language: readLocalLang(),
