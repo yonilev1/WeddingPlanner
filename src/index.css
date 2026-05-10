@@ -196,6 +196,14 @@
   .dashboard-two-col { grid-template-columns: 1fr; }
 }
 
+/* ── Guest list: table on desktop, cards on mobile ──────────────────────── */
+.guest-table-desktop { display: block; }
+.guest-cards-mobile  { display: none;  }
+@media (max-width: 640px) {
+  .guest-table-desktop { display: none;  }
+  .guest-cards-mobile  { display: flex;  }
+}
+
 /* ── Print styles ─────────────────────────────────────────────────────────── */
 @media print {
   body > #root > * { display: none !important; }

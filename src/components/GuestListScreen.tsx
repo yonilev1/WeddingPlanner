@@ -322,7 +322,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
         />
       </div>
 
-      {/* Guest table */}
+      {/* Guest list — desktop table / mobile cards */}
       {isLoading ? (
         <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--ink-3)' }}>…</div>
       ) : filtered.length === 0 ? (
@@ -332,99 +332,185 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
           <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>{g.noGuestsHint}</p>
         </div>
       ) : (
-        <div style={{
-          background: 'var(--bg-card)', borderRadius: 14,
-          border: '1px solid var(--line)', overflow: 'hidden',
-        }}>
-          {/* Table header */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1.8fr 1fr 1.2fr 0.6fr 0.6fr 0.7fr auto',
-            gap: '0 16px', padding: '10px 16px',
-            background: 'var(--bg-soft)',
-            borderBottom: '1px solid var(--line)',
+        <>
+          {/* ── Desktop table (hidden on mobile) ── */}
+          <div className="guest-table-desktop" style={{
+            background: 'var(--bg-card)', borderRadius: 14,
+            border: '1px solid var(--line)', overflow: 'hidden',
           }}>
-            {[g.name, 'RSVP', g.dietary, g.plusOne, g.tableNumber, g.group, ''].map((h, i) => (
-              <span key={i} className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                {h}
-              </span>
+            {/* Table header */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1.8fr 1fr 1.2fr 0.6fr 0.6fr 0.7fr auto',
+              gap: '0 16px', padding: '10px 16px',
+              background: 'var(--bg-soft)',
+              borderBottom: '1px solid var(--line)',
+            }}>
+              {[g.name, 'RSVP', g.dietary, g.plusOne, g.tableNumber, g.group, ''].map((h, i) => (
+                <span key={i} className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {h}
+                </span>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {filtered.map((guest, idx) => (
+              <div
+                key={guest.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1.8fr 1fr 1.2fr 0.6fr 0.6fr 0.7fr auto',
+                  gap: '0 16px', padding: '12px 16px', alignItems: 'center',
+                  borderBottom: idx < filtered.length - 1 ? '1px solid var(--line-soft)' : 'none',
+                  transition: 'background 120ms',
+                }}
+                onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
+                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '')}
+              >
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 1 }}>{guest.name}</p>
+                  {guest.email && <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{guest.email}</p>}
+                </div>
+
+                <div>
+                  <RsvpPill status={guest.rsvp_status} label={rsvpLabels[guest.rsvp_status] ?? guest.rsvp_status} />
+                  {guest.plus_one_name && (
+                    <p style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 3 }}>+{guest.plus_one_name}</p>
+                  )}
+                </div>
+
+                <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{guest.dietary ?? '—'}</p>
+
+                <p style={{ fontSize: 12, color: guest.plus_one ? 'var(--ok)' : 'var(--ink-4)', textAlign: 'center' }}>
+                  {guest.plus_one ? '✓' : '—'}
+                </p>
+
+                <p style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'center' }}>
+                  {guest.table_number ?? '—'}
+                </p>
+
+                <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{guest.group_name ?? '—'}</p>
+
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    onClick={() => openEdit(guest)}
+                    style={{
+                      padding: '8px 10px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
+                      background: 'var(--bg-soft)', color: 'var(--ink-3)',
+                      border: '1px solid var(--line)', fontWeight: 500,
+                    }}
+                  >
+                    {tr.admin.editComment}
+                  </button>
+                  {confirmDeleteId === guest.id ? (
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button
+                        onClick={() => handleDelete(guest.id)}
+                        style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 600 }}
+                      >✓</button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(guest.id)}
+                      style={{
+                        padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
+                        background: 'transparent', color: 'var(--bad)',
+                        border: '1px solid var(--line)',
+                      }}
+                    >×</button>
+                  )}
+                </div>
+              </div>
             ))}
           </div>
 
-          {/* Rows */}
-          {filtered.map((guest, idx) => (
-            <div
-              key={guest.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1.8fr 1fr 1.2fr 0.6fr 0.6fr 0.7fr auto',
-                gap: '0 16px', padding: '12px 16px', alignItems: 'center',
-                borderBottom: idx < filtered.length - 1 ? '1px solid var(--line-soft)' : 'none',
-                transition: 'background 120ms',
-              }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = '')}
-            >
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 1 }}>{guest.name}</p>
-                {guest.email && <p style={{ fontSize: 11, color: 'var(--ink-4)' }}>{guest.email}</p>}
-              </div>
-
-              <div>
-                <RsvpPill status={guest.rsvp_status} label={rsvpLabels[guest.rsvp_status] ?? guest.rsvp_status} />
-                {guest.plus_one_name && (
-                  <p style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 3 }}>+{guest.plus_one_name}</p>
-                )}
-              </div>
-
-              <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{guest.dietary ?? '—'}</p>
-
-              <p style={{ fontSize: 12, color: guest.plus_one ? 'var(--ok)' : 'var(--ink-4)', textAlign: 'center' }}>
-                {guest.plus_one ? '✓' : '—'}
-              </p>
-
-              <p style={{ fontSize: 12, color: 'var(--ink-3)', textAlign: 'center' }}>
-                {guest.table_number ?? '—'}
-              </p>
-
-              <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>{guest.group_name ?? '—'}</p>
-
-              <div style={{ display: 'flex', gap: 4 }}>
-                <button
-                  onClick={() => openEdit(guest)}
-                  style={{
-                    padding: '8px 10px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
-                    background: 'var(--bg-soft)', color: 'var(--ink-3)',
-                    border: '1px solid var(--line)', fontWeight: 500,
-                  }}
-                >
-                  {tr.admin.editComment}
-                </button>
-                {confirmDeleteId === guest.id ? (
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    <button
-                      onClick={() => handleDelete(guest.id)}
-                      style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 600 }}
-                    >✓</button>
-                    <button
-                      onClick={() => setConfirmDeleteId(null)}
-                      style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
-                    >✕</button>
+          {/* ── Mobile cards (hidden on desktop) ── */}
+          <div className="guest-cards-mobile" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filtered.map((guest) => (
+              <div key={guest.id} style={{
+                background: 'var(--bg-card)', borderRadius: 14,
+                border: '1px solid var(--line)', padding: '14px 16px',
+              }}>
+                {/* Top row: name + RSVP pill */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 10 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.name}</p>
+                    {guest.email && <p style={{ fontSize: 12, color: 'var(--ink-4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.email}</p>}
                   </div>
-                ) : (
+                  <div style={{ flexShrink: 0 }}>
+                    <RsvpPill status={guest.rsvp_status} label={rsvpLabels[guest.rsvp_status] ?? guest.rsvp_status} />
+                  </div>
+                </div>
+
+                {/* Meta row: dietary, +1, table, group */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginBottom: 12 }}>
+                  {guest.dietary && (
+                    <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+                      <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginRight: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.dietary}:</span>
+                      {guest.dietary}
+                    </span>
+                  )}
+                  {guest.plus_one && (
+                    <span style={{ fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>
+                      +1{guest.plus_one_name ? ` ${guest.plus_one_name}` : ''}
+                    </span>
+                  )}
+                  {guest.table_number != null && (
+                    <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+                      <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginRight: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.tableNumber}:</span>
+                      {guest.table_number}
+                    </span>
+                  )}
+                  {guest.group_name && (
+                    <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+                      <span className="font-mono-ui" style={{ fontSize: 10, color: 'var(--ink-4)', marginRight: 3, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{g.group}:</span>
+                      {guest.group_name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 8 }}>
                   <button
-                    onClick={() => setConfirmDeleteId(guest.id)}
+                    onClick={() => openEdit(guest)}
                     style={{
-                      padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
-                      background: 'transparent', color: 'var(--bad)',
-                      border: '1px solid var(--line)',
+                      flex: 1, padding: '10px 0', minHeight: 44, fontSize: 13, borderRadius: 8, cursor: 'pointer',
+                      background: 'var(--bg-soft)', color: 'var(--ink-2)',
+                      border: '1px solid var(--line)', fontWeight: 600,
                     }}
-                  >×</button>
-                )}
+                  >
+                    {tr.admin.editComment}
+                  </button>
+                  {confirmDeleteId === guest.id ? (
+                    <>
+                      <button
+                        onClick={() => handleDelete(guest.id)}
+                        style={{ flex: 1, padding: '10px 0', minHeight: 44, fontSize: 13, borderRadius: 8, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 700 }}
+                      >✓ {g.confirmDelete ?? 'Delete'}</button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        style={{ padding: '10px 16px', minHeight: 44, fontSize: 13, borderRadius: 8, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
+                      >✕</button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(guest.id)}
+                      style={{
+                        padding: '10px 16px', minHeight: 44, minWidth: 44, fontSize: 16, borderRadius: 8, cursor: 'pointer',
+                        background: 'transparent', color: 'var(--bad)',
+                        border: '1px solid var(--line)',
+                      }}
+                    >×</button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Bulk import modal */}

@@ -1,8 +1,9 @@
 # Wedding Planner — Project Context
 
-## 0. Recent Session Summary (2026-05-09)
+## 0. Recent Session Summary (2026-05-10)
 
-**What was completed this session:**
+### Session 1 (2026-05-09)
+**What was completed:**
 1. ✅ **Guest List & RSVP Tracker** — full screen with stats tiles, filter pills, search, table view, add/edit modal, bulk import with couple auto-detection and per-row toggle
 2. ✅ **Vendor Directory** — full screen with category tabs, card grid, add/edit modal, contract/deposit tracking
 3. ✅ **Task Assignment** — assignee picker in TaskDetailDrawer; `assigned_to` column on tasks table
@@ -13,6 +14,27 @@
 8. ✅ **Budget tracking** — users enter estimated and actual costs per task; vendors link to tasks; BudgetPanel aggregates task + vendor costs by category with spend bars and totals
 9. ✅ **Improved empty states** — Dashboard urgent tasks and recent activity show actionable prompts when empty
 10. ✅ **Admin-only Delete All Guests** — with inline confirm; per-row delete requires confirm (click ×→✓/✕)
+
+### Session 2 (2026-05-10)
+**Major fixes & UX improvements:**
+1. ✅ **Removed seeded budget mock data** — no more predefined cost estimates; users control budget allocation entirely
+2. ✅ **Vendor-to-budget linking** — vendors now link to tasks via `task_id` FK; vendor costs included in BudgetPanel calculations; added "Link to Task" dropdown in vendor edit form
+3. ✅ **Realtime vendor subscription** — added `postgres_changes` subscription to `useVendors` hook for instant budget updates when vendors are added/edited on mobile
+4. ✅ **Typography hierarchy fixes** — standardized stat numbers to `32px font-display 400` across all screens; section headers to `20px`; row text to `14px 600`; form labels to `.font-mono-ui` class
+5. ✅ **Mobile UX polish (Quick Wins 1-6):**
+   - Mobile modal sizing: vendor/guest forms responsive (`maxHeight: 90vh`, full width on mobile `<480px`)
+   - Loading states: "…" indicators on empty screens during data fetch
+   - Required field markers: red `*` asterisks on Name fields in vendor/guest forms
+   - Touch target sizes: all buttons ≥44px minimum height/width (buttons were 6-8px, now 10-12px + minHeight 40-44px)
+   - Bulk import toast: confirmation message shows person count after import
+   - Tablet breakpoint: dashboard two-col layout stays two-column up to 900px (was 768px)
+   - Font standardization: all form field labels now use `.font-mono-ui` class instead of inline `fontFamily`
+6. ✅ **Auth/realtime error guards** — wrapped all Supabase realtime subscriptions in try-catch to prevent blank-page crashes when auth token is refreshing or client not fully initialized
+
+**Key architectural decisions (Session 2):**
+- Vendor costs now flow through BudgetPanel via: `vendors.filter(v => v.task_id === cat.id)` → sum `v.total_cost` → add to category estimated
+- No mock/seeded budget data — user starts with zero costs; app is "bring your own numbers"
+- Realtime subscriptions now defensive: check for `.on()` method existence, wrapped in try-catch, safe unsubscribe
 
 **Pending migrations (must run in Supabase SQL Editor):**
 - `007_guests.sql` — guests table + RLS
@@ -116,15 +138,15 @@ src/
 ├── hooks/
 │   ├── useAuth.ts               Auth state + profile, signOut
 │   ├── useWedding.ts            Fetches single wedding row
-│   ├── useTasks.ts              useTaskTree, useUpdateTask (optimistic), useAddTask, useDeleteTask
-│   ├── useComments.ts           useComments, useAddComment (@mention notifications), useActivity
+│   ├── useTasks.ts              useTaskTree, useUpdateTask (optimistic), useAddTask, useDeleteTask, activity logging
+│   ├── useComments.ts           useComments, useAddComment (@mention notifications + parsing), useActivity
 │   ├── useCollaborators.ts      All profiles for a wedding (used for @mention autocomplete + assignee picker)
-│   ├── useNotifications.ts      useNotifications (realtime), useMarkNotificationsRead
+│   ├── useNotifications.ts      useNotifications (realtime with error guards), useMarkNotificationsRead, useInsertNotifications
 │   ├── useGuests.ts             useGuests, useAddGuest, useUpdateGuest, useDeleteGuest, useDeleteAllGuests, useBulkAddGuests
-│   ├── useVendors.ts            useVendors, useAddVendor, useUpdateVendor, useDeleteVendor
+│   ├── useVendors.ts            useVendors (with realtime subscription), useAddVendor, useUpdateVendor, useDeleteVendor
 │   ├── useAdminActions.ts       useApproveMember, useRejectMember, useRemoveMember, useSetMemberRole
 │   ├── useToast.ts              Toast store (success/error, auto-dismiss 3s)
-│   └── usePresence.ts           Real-time user presence tracking
+│   └── usePresence.ts           Real-time user presence tracking (with error guards)
 ├── components/
 │   ├── ui/
 │   │   ├── PriorityBadge.tsx    P1-P5 colored badges
@@ -148,17 +170,18 @@ src/
 └── main.tsx                     React root + QueryClientProvider + PWA registration
 
 supabase/migrations/
-├── 001_initial_schema.sql       Tables, RLS, triggers ✅ APPLIED
-├── 002_seed_default_tasks.sql   seed_default_tasks() + trigger ✅ APPLIED
-├── 003_rpc_find_wedding.sql     find_wedding_by_code() RPC ✅ APPLIED
-├── 003_budget_fields.sql        Budget fields (superseded by 004)
-├── 004_add_cost_columns.sql     estimated_cost / actual_cost on tasks ✅ APPLIED
-├── 005_notifications.sql        notifications table + RLS + realtime ✅ APPLIED
-├── 006_admin_system.sql         role + member_status on profiles ✅ APPLIED
-├── 007_guests.sql               guests table + RLS ⚠️ PENDING
-├── 008_vendors.sql              vendors table + RLS ⚠️ PENDING
-├── 009_task_assignment.sql      assigned_to column on tasks ⚠️ PENDING
-└── 011_clear_seeded_budgets.sql Clears any seeded budget data (if any exists) ⚠️ PENDING
+├── 001_initial_schema.sql          Tables, RLS, triggers ✅ APPLIED
+├── 002_seed_default_tasks.sql      seed_default_tasks() + trigger (no budget estimates) ✅ APPLIED
+├── 003_rpc_find_wedding.sql        find_wedding_by_code() RPC ✅ APPLIED
+├── 004_add_cost_columns.sql        estimated_cost / actual_cost on tasks ✅ APPLIED
+├── 005_notifications.sql           notifications table + RLS + realtime ✅ APPLIED
+├── 006_admin_system.sql            role + member_status on profiles ✅ APPLIED
+├── 007_guests.sql                  guests table + RLS ⚠️ PENDING (needed for guest feature)
+├── 008_vendors.sql                 vendors table + RLS ⚠️ PENDING (needed for vendor feature)
+├── 009_task_assignment.sql         assigned_to column on tasks ⚠️ PENDING (needed for task assignment)
+├── 010_seed_budget_estimates.sql   [DEPRECATED] Seeded budget data — do not run (user-entered only as of Session 2)
+├── 011_clear_seeded_budgets.sql    [DEPRECATED] Clears seeded data — do not run
+└── 012_vendor_task_linking.sql     task_id FK on vendors table ⚠️ PENDING (needed for vendor-budget integration)
 
 public/
 └── icons/
@@ -183,13 +206,17 @@ public/
 
 - **Comments join is manual**: `comments.user_id` → `auth.users` is not directly queryable via PostgREST. `useComments` fetches comments then fetches matching profiles by ID and merges client-side.
 - **Optimistic updates**: `useUpdateTask` writes to React Query cache instantly; reverts on error.
-- **Auto-seed trigger**: `trg_seed_default_tasks` fires AFTER INSERT on `weddings` and inserts 13 categories + ~72 subtasks with realistic due dates and now budget estimates.
+- **Auto-seed trigger**: `trg_seed_default_tasks` fires AFTER INSERT on `weddings` and inserts 13 categories + ~72 subtasks with realistic due dates and NO budget estimates (user-entered only as of Session 2).
 - **`_prevTask` pattern**: `useUpdateTask` accepts optional `_prevTask?: Task` (destructured before spread so it never reaches the DB) for activity log diffing in `onSuccess`.
 - **Controlled cost inputs**: Cost fields in TaskDetailDrawer use `localEstimated`/`localActual` state synced via `useEffect` on `task?.id` — prevents stale values after realtime updates.
 - **Getting started collapse**: Stored in Zustand session state only (not localStorage). Resets on page refresh. Auto-disappears when all 5 steps genuinely complete from live data.
-- **Budget estimates on category tasks**: `estimated_cost` is set on the parent (category) task row. `BudgetPanel` sums `[cat, ...cat.subtasks]` per category, so category-level budget and subtask-level line items coexist cleanly.
+- **Vendor-budget integration**: Vendors link to tasks via `task_id` FK. `BudgetPanel` filters vendors by `v.task_id === cat.id` and sums their `total_cost` into category estimated costs. Deposit tracking: if `v.deposit_paid`, includes `v.deposit_amount` in actual spend.
+- **Realtime subscription guards**: All `postgres_changes` subscriptions in `useVendors`, `useNotifications`, `usePresence` wrapped in try-catch. Defensive check: `if (!vendorTable?.on)` before calling `.on()`. Prevents blank-page crashes during auth token refresh.
+- **Budget cost strategy (user-controlled)**: Vendors entering `total_cost` in edit form; cost flows through BudgetPanel via task linking. No seeded estimates. Remaining budget = total_estimated - total_actual. If `wedding.budget_total` not set, remaining shows as $0 (acceptable for user-driven budgeting).
 - **Duplicate key TS6.0.2 protection**: TypeScript 6.0.2 throws `TS1117` on duplicate literal keys in object literals. The `vendors` translation section uses `contractsSigned` (not `signed`) for the stat tile to avoid collision with the `signed` contract status option key.
 - **Duplicate `wedding_id` spread fix**: When building insert/update payloads from a draft object that already contains `wedding_id`, destructure it out first: `const { wedding_id: _w, ...data } = draft`.
+- **Typography hierarchy (8-level scale)**: Stat numbers: `32px font-display 400`; section headers: `20px font-display 400`; card primary: `14px 600`; labels: `10px 600 font-mono-ui`. Applied across Dashboard, GuestList, Vendor, Budget screens for visual consistency.
+- **Mobile-first responsive design**: Modals use `90vh` max-height with full-width on mobile (`<480px`). Tablet breakpoint for two-column layouts: `900px` (increased from `768px`). Touch targets: all interactive elements minimum `40-44px` height/width.
 
 ## 7. i18n Translation Sections
 
@@ -212,7 +239,46 @@ tr.categoryNames — Category title translations (keyed by English title)
 tr.taskNames     — Subtask title translations (keyed by English title, 72 entries)
 ```
 
-## 8. Getting Started Checklist (DashboardScreen)
+## 8. Mobile UX Improvements (Session 2 Quick Wins 1-6)
+
+**1. Modal Responsive Sizing:**
+- Desktop: `maxWidth: 600px` (vendor) / `560px` (guest)
+- Mobile (`<480px`): `maxWidth: 100%` (full screen width)
+- All modals: `maxHeight: 90vh` (leaves room for keyboard)
+- Affected: `VendorScreen`, `GuestListScreen` (both add/edit + bulk import)
+
+**2. Touch Target Compliance:**
+- Goal: minimum `44-48px` for touch targets (WCAG standard)
+- Changes:
+  - Vendor/guest card action buttons: `minHeight: 44px`
+  - Table row edit/delete buttons: `minHeight: 40px, minWidth: 40px`
+  - Bulk import couple toggle: increased from `32×28px` → `44×44px`
+- All buttons maintain visual consistency while meeting accessibility standards
+
+**3. Required Field Markers:**
+- Name fields in vendor/guest forms: red `*` asterisk
+- HTML `required` attribute added to inputs (browser validation)
+- Style: `<span style={{ color: 'var(--bad)' }}>*</span>`
+
+**4. Form Field Label Consistency:**
+- Removed inline `fontFamily: 'var(--font-mono, monospace)'`
+- All form labels now use `.font-mono-ui` class
+- Ensures Geist Mono branding across all screens
+- Applied in: VendorScreen, GuestListScreen (all form sections)
+
+**5. Tablet Breakpoint Adjustment:**
+- Changed `.dashboard-two-col` breakpoint from `768px` → `900px`
+- Impact: two-column layout stays together on larger tablets (iPad, 10" devices)
+- Only collapses to single column on phones (`<900px`)
+
+**6. Loading States:**
+- Empty screens show "…" centered text while data loads
+- Applied to: VendorScreen, GuestListScreen (both list views)
+- Prevents visual jarring during React Query hydration
+
+---
+
+## 8A. Getting Started Checklist (DashboardScreen)
 
 5 steps, auto-detected from live data:
 
@@ -228,15 +294,61 @@ tr.taskNames     — Subtask title translations (keyed by English title, 72 entr
 - Pill shows progress bars + "Getting started · X/5" — always clickable to reopen
 - When all 5 done: checklist replaced by a celebration banner ("💍 You're all set up…")
 
-## 9. Budget Tracking
+## 8A. Typography Hierarchy (Session 2 Implementation)
 
-All cost fields start empty. Users enter `estimated_cost` and `actual_cost` per task via the TaskDetailDrawer. The BudgetPanel aggregates these values by category and displays:
-- Total estimated vs. total spent
-- Per-category breakdown with spend bars
-- Remaining budget or over-budget indicator
-- Top line items sorted by estimated cost
+Standardized 8-level visual hierarchy across all screens for consistent emphasis:
 
-## 10. Current State (as of 2026-05-09)
+| Level | Role | Size | Weight | Font | Color | Example |
+|---|---|---|---|---|---|---|
+| L1 | Hero number | clamp(52–88px) | 400 | `font-display` | `--accent` | Countdown days |
+| L2 | Page title | clamp(28–44px) | 400 | `font-display` | `--ink` | "Guests" / "Vendors" |
+| L3 | Stat number | `32px` | 400 | `font-display` | `--ink` | "247" guests, "$80k" budget |
+| L4 | Section header | `20px` | 400 | `font-display` | `--ink` | "By Category" / "Urgent Tasks" |
+| L5 | Card/row primary | `14px` | 600 | sans | `--ink` | Guest name, task title |
+| L6 | Body / subtitle | `13px` | 400 | sans | `--ink-3` | Guest email, task description |
+| L7 | Stat label / table header | `10px` | 600 | `font-mono-ui` | `--ink-4` | "TOTAL GUESTS", "RSVP", "CATEGORY" |
+| L8 | Timestamp / meta | `11px` | 400 | `font-mono-ui` | `--ink-4` | Activity timestamps, relative time |
+
+**Applied to screens:**
+- `DashboardScreen` — stat tiles, section headers, task rows
+- `GuestListScreen` — guest stat tiles, table headers, guest names
+- `VendorScreen` — vendor stat tiles, form labels
+- `BudgetPanel` — budget tiles, category headers, line items
+
+**Implementation notes:**
+- All `.font-mono-ui` labels use the CSS class (not inline `fontFamily`)
+- Form field labels: `<label className="font-mono-ui" style={fieldLabel}>Label *</label>`
+- Stat numbers: `<p className="font-display" style={{ fontSize: 32, ... }}>99</p>`
+
+---
+
+## 9. Budget Tracking System
+
+**Cost entry points:**
+1. **Per-task costs** — TaskDetailDrawer: users enter `estimated_cost` and `actual_cost` per subtask
+2. **Vendor costs** — VendorScreen: vendors have `total_cost` and optional `deposit_amount`
+
+**Cost aggregation (BudgetPanel):**
+```
+per_category_estimated = SUM(category_tasks[*].estimated_cost) 
+                       + SUM(vendors WHERE vendor.task_id IN category_task_ids).total_cost
+per_category_actual    = SUM(category_tasks[*].actual_cost) 
+                       + SUM(vendors WHERE vendor.deposit_paid).deposit_amount
+```
+
+**Display:**
+- Total estimated vs. total spent (summary tiles with progress bar)
+- Per-category breakdown with spend bars (side-by-side estimated/actual)
+- Remaining budget = total_estimated - total_actual (green if positive, red if over-budget)
+- Top 8 line items (subtasks with `estimated_cost > 0`) sorted by cost descending
+
+**Design decision (Session 2):**
+- No seeded/default costs — users start with `$0` and control all spending
+- Vendor `total_cost` flows into the budget only if `vendor.task_id` is set (category or subtask)
+- Deposit tracking: only counts `deposit_amount` if `deposit_paid = true`
+- Optional: `wedding.budget_total` can be set to track against a grand total (currently unused, acceptable for user-driven budgeting)
+
+## 10. Current State (as of 2026-05-10)
 
 **All core features implemented and TypeScript-clean (0 errors):**
 
@@ -247,9 +359,10 @@ All cost fields start empty. Users enter `estimated_cost` and `actual_cost` per 
 | Task Board with 13 seeded categories + ~72 subtasks | ✅ |
 | Task Detail Drawer (status, priority, due date, assignee, budget, comments) | ✅ |
 | Dashboard (hero, countdown, stats, getting-started, urgent tasks, team, activity) | ✅ |
-| Budget panel with seeded category estimates, Share%, spend bars | ✅ |
+| Budget panel (user-entered estimates, vendor costs linked to tasks, per-category breakdown) | ✅ |
 | Guest List with RSVP tracking and bulk import | ✅ |
-| Vendor Directory | ✅ |
+| Vendor Directory with contract/deposit tracking | ✅ |
+| Vendor-to-task linking (vendors linked to category/subtasks for budget integration) | ✅ |
 | Task assignment to team members | ✅ |
 | @Mention in comments + in-app notifications | ✅ |
 | Admin system (roles, approval, permissions) | ✅ |
@@ -259,25 +372,29 @@ All cost fields start empty. Users enter `estimated_cost` and `actual_cost` per 
 | Dark mode | ✅ |
 | PWA (installable) | ✅ |
 | Getting Started checklist | ✅ |
-| Realtime multi-user sync | ✅ |
-| Mobile responsive | ✅ |
+| Realtime multi-user sync with error guards | ✅ |
+| Mobile responsive (modal sizing, 48px+ touch targets, tablet breakpoint 900px) | ✅ |
+| Typography hierarchy (serif numbers, monospace labels, clear visual hierarchy) | ✅ |
+| Form required field markers | ✅ |
 
 **Pending migrations (run in Supabase SQL Editor):**
-- `007_guests.sql` ⚠️
-- `008_vendors.sql` ⚠️
-- `009_task_assignment.sql` ⚠️
+- `007_guests.sql` ⚠️ (needed for guest persistence)
+- `008_vendors.sql` ⚠️ (needed for vendor persistence)
+- `009_task_assignment.sql` ⚠️ (needed for task assignment)
+- `012_vendor_task_linking.sql` ⚠️ (needed for vendor-budget integration)
 
 ## 11. Known Issues / Limitations
 
+**Current (unfixed):**
 - **OnboardingTour not translated** — 5 step strings are hardcoded English. Low priority (one-time experience).
 - **Budget total editing** — `WeddingSettingsPanel` doesn't have a field to set `wedding.budget_total`. The budget panel's "remaining" tile relies on this field; without it, remaining = $0.
-- **Vendor step in Getting Started** — always shows "not done" on first load until vendors query resolves (brief flash). Acceptable UX.
 - **Guest/Vendor TypeScript cast** — `(supabase as any).from('guests'|'vendors')` used because DB types not regenerated after new tables. Remove casts after running `supabase gen types`.
 - **Comments scroll** — on very long comment threads, the compose form can be pushed off-screen.
 - **Activity log raw strings** — status values shown as `todo`/`in_progress`/`done` (not translated) since they come from the DB activity log.
 - **No error UI** — if Supabase env vars are missing, app silently fails.
+- **Modal inline media queries** — mobile modal resize uses inline `@media` in style prop (CSS-in-JS workaround). Not ideal; consider moving to CSS class if adding more media queries.
 
-**Previously resolved:**
+**Previously resolved (Session 1):**
 - ~~RLS violation on `weddings`~~ ✅
 - ~~Sidebar hidden on desktop (RTL specificity bug)~~ ✅
 - ~~Duplicate key TS6.0.2 errors in translations.ts~~ ✅
@@ -286,37 +403,56 @@ All cost fields start empty. Users enter `estimated_cost` and `actual_cost` per 
 - ~~`\b` word boundary broken for Hebrew in COUPLE_PATTERN~~ ✅
 - ~~Getting started "×" permanently dismissed card~~ ✅ (collapse only, reopen via pill)
 - ~~Vendor step always "not done" even after adding vendor~~ ✅ (useVendors added to DashboardScreen)
-- ~~Budget panel showing only one category~~ ✅ (migration 010 + BudgetPanel improvements)
+- ~~Budget panel showing only one category~~ ✅ (BudgetPanel improvements)
 - ~~Cost inputs stale after realtime update~~ ✅
 - ~~Month names always English in HeatmapView~~ ✅
+
+**Previously resolved (Session 2):**
+- ~~Seeded budget mock data conflicting with user intent~~ ✅ (removed all seeded cost estimates)
+- ~~Vendor costs not appearing in budget panel~~ ✅ (vendor-to-task linking + cost aggregation)
+- ~~Vendor added on mobile doesn't show in budget until refresh~~ ✅ (realtime subscription + React Query invalidation)
+- ~~Typography hierarchy flat on all screens~~ ✅ (8-level scale implemented, stat numbers to 32px serif)
+- ~~Form field label fonts inconsistent~~ ✅ (all standardized to `.font-mono-ui` class)
+- ~~Touch targets too small for mobile~~ ✅ (all interactive elements ≥40px)
+- ~~Blank page after login on mobile~~ ✅ (realtime subscription error guards added to all hooks)
 
 ## 12. TODO / Next Steps
 
 **CRITICAL — Run in Supabase SQL Editor (in order):**
-1. ⚠️ `007_guests.sql`
-2. ⚠️ `008_vendors.sql`
-3. ⚠️ `009_task_assignment.sql`
-4. ⚠️ `011_clear_seeded_budgets.sql`
-5. ⚠️ `012_vendor_task_linking.sql`
-4. ⚠️ `010_seed_budget_estimates.sql`
+1. ⚠️ `007_guests.sql` — guests table + RLS
+2. ⚠️ `008_vendors.sql` — vendors table + RLS
+3. ⚠️ `009_task_assignment.sql` — assigned_to column
+4. ⚠️ `012_vendor_task_linking.sql` — task_id FK for budget linking
 
-**High priority:**
-5. **Translate OnboardingTour** — add `en`/`fr`/`he` strings to `translations.ts`
-6. **Regenerate Supabase types** — after running 007/008 migrations, run `supabase gen types typescript` to remove `(supabase as any)` casts in useGuests/useVendors
-7. **Budget total field** — add input to `WeddingSettingsPanel` to save `wedding.budget_total` (optional; currently "remaining" is calculated as total_estimated - total_actual)
+**High priority (UX gaps identified in audit):**
+1. **Responsive guest table** — create card-view for guests on mobile (currently grid collapses to hard-to-read columns)
+2. **Vendor linking visual indicator** — show small badge/icon on vendor cards when linked to a task
+3. **Plus-one relationship clarity** — improve visual distinction between main guest and plus-one (currently just small text)
+4. **Translate OnboardingTour** — add `en`/`fr`/`he` strings to `translations.ts`
+5. **Regenerate Supabase types** — after running 007/008/009 migrations, run `supabase gen types typescript` to remove `(supabase as any)` casts in useGuests/useVendors
+6. **Budget total field** — add input to `WeddingSettingsPanel` to save `wedding.budget_total` (optional; currently "remaining" is calculated as total_estimated - total_actual)
 
 **Medium priority:**
-8. **Comments scroll fix** — sticky/fixed bottom compose form on long comment lists
-9. **Email invitations** — send invite links to non-users via email (currently just share code copy)
-10. **User avatar upload** — profile photos in collaborator list and comment threads
-11. **Vendor count in Getting Started** — already works; verify after migration 008 is applied
-12. **Error UI** — graceful error page if VITE_SUPABASE_URL/ANON_KEY are missing
+7. **Comments scroll fix** — sticky/fixed bottom compose form on long comment lists
+8. **Email invitations** — send invite links to non-users via email (currently just share code copy)
+9. **User avatar upload** — profile photos in collaborator list and comment threads
+10. **Modal media queries to CSS** — move inline `@media` from vendor/guest modal styles to proper CSS class
+11. **Error UI** — graceful error page if VITE_SUPABASE_URL/ANON_KEY are missing
 
 **Nice to have:**
-13. **Guest table seating plan** — visual drag-and-drop table assignment view
-14. **Budget currency** — configurable currency symbol (currently hardcoded USD)
-15. **Export guest list** — CSV download of guest list with RSVP status
-16. **Vendor contract file upload** — attach PDFs to vendor records
+12. **Guest table seating plan** — visual drag-and-drop table assignment view
+13. **Budget currency** — configurable currency symbol (currently hardcoded USD)
+14. **Export guest list** — CSV download of guest list with RSVP status
+15. **Vendor contract file upload** — attach PDFs to vendor records
+16. **Form data loss warning** — alert when closing a modal with unsaved form changes
+
+**Completed this session (Session 2):**
+- ✅ Removed seeded budget mock data
+- ✅ Implemented vendor-to-task linking for budget integration
+- ✅ Added realtime vendor subscription to sync budget updates instantly
+- ✅ Fixed typography hierarchy across all screens
+- ✅ Improved mobile UX (modals, touch targets, form labels, breakpoints)
+- ✅ Added error guards to all realtime subscriptions to prevent auth-related crashes
 
 ## 13. Implementation Notes
 

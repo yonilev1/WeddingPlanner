@@ -18,6 +18,9 @@ export function WeddingSettingsPanel({ wedding, onClose }: Props) {
 
   const [name, setName] = useState(wedding.name)
   const [date, setDate] = useState(wedding.date ?? '')
+  const [budgetTotal, setBudgetTotal] = useState<string>(
+    wedding.budget_total != null ? String(wedding.budget_total) : ''
+  )
   const [saving, setSaving] = useState(false)
 
   const handleSave = async (e: React.FormEvent) => {
@@ -27,7 +30,11 @@ export function WeddingSettingsPanel({ wedding, onClose }: Props) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase.from('weddings') as any)
-      .update({ name: name.trim(), date: date || null })
+      .update({
+        name: name.trim(),
+        date: date || null,
+        budget_total: budgetTotal !== '' ? Number(budgetTotal) : null,
+      })
       .eq('id', wedding.id)
 
     setSaving(false)
@@ -89,6 +96,26 @@ export function WeddingSettingsPanel({ wedding, onClose }: Props) {
               className={inputCls}
             />
             <p className="text-xs text-stone-400 mt-1.5">{s.dateHint}</p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">
+              {s.budgetTotal} <span className="normal-case text-stone-300 font-normal">{s.dateOptional}</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm pointer-events-none">$</span>
+              <input
+                type="number"
+                min={0}
+                step={100}
+                value={budgetTotal}
+                onChange={(e) => setBudgetTotal(e.target.value)}
+                placeholder={s.budgetTotalPlaceholder}
+                className={inputCls}
+                style={{ paddingLeft: '1.75rem' }}
+              />
+            </div>
+            <p className="text-xs text-stone-400 mt-1.5">{s.budgetTotalHint}</p>
           </div>
 
           <div className="flex gap-3 pt-2">

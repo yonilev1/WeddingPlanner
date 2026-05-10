@@ -75,10 +75,20 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
     return d.timeAgoJustNow
   }
 
+  const STATUS_LABELS: Record<string, string> = {
+    todo: d.notStarted,
+    in_progress: d.inProgress,
+    done: d.done,
+  }
+  function fmtStatus(val: string | null) {
+    if (!val) return '—'
+    return STATUS_LABELS[val] ?? val.replace(/_/g, ' ')
+  }
+
   const actionSummary = (action: string, oldVal: string | null, newVal: string | null) => {
     switch (action) {
       case 'created': return d.actCreated
-      case 'status_changed': return `${d.actStatusChanged}: ${oldVal} → ${newVal}`
+      case 'status_changed': return `${d.actStatusChanged}: ${fmtStatus(oldVal)} → ${fmtStatus(newVal)}`
       case 'priority_changed': return `${d.actPriorityChanged}: P${oldVal} → P${newVal}`
       case 'title_changed': return `${d.actRenamed} "${newVal}"`
       case 'description_changed': return d.actUpdatedDesc
@@ -331,12 +341,12 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
           ))}
         </div>
 
-        {/* Body */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        {/* Body — overflow hidden on comments so the list scrolls and compose is pinned */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: tab === 'comments' ? 'hidden' : 'auto', display: 'flex', flexDirection: 'column' }}>
 
           {/* ── Details ── */}
           {tab === 'details' && (
-            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
               {/* Status — segmented control */}
               <div>
@@ -479,8 +489,8 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
 
           {/* ── Comments ── */}
           {tab === 'comments' && (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {!comments?.length ? (
                   <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, paddingTop: 40 }}>{d.noComments}</p>
                 ) : (
@@ -633,7 +643,7 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
 
           {/* ── Activity ── */}
           {tab === 'activity' && (
-            <div style={{ padding: 20 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
               {!activity?.length ? (
                 <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontSize: 14, paddingTop: 40 }}>{d.noActivity}</p>
               ) : (
