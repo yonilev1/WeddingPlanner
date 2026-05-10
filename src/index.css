@@ -192,7 +192,7 @@
   grid-template-columns: 1.7fr 1fr;
   gap: 28px;
 }
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .dashboard-two-col { grid-template-columns: 1fr; }
 }
 

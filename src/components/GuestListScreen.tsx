@@ -14,7 +14,6 @@ type RsvpFilter = 'all' | 'confirmed' | 'declined' | 'pending'
 const fieldLabel: React.CSSProperties = {
   display: 'block', fontSize: 10, fontWeight: 600, color: 'var(--ink-4)',
   letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6,
-  fontFamily: 'var(--font-mono, monospace)',
 }
 
 const inputStyle: React.CSSProperties = {
@@ -394,7 +393,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
                 <button
                   onClick={() => openEdit(guest)}
                   style={{
-                    padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer',
+                    padding: '8px 10px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
                     background: 'var(--bg-soft)', color: 'var(--ink-3)',
                     border: '1px solid var(--line)', fontWeight: 500,
                   }}
@@ -405,18 +404,18 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button
                       onClick={() => handleDelete(guest.id)}
-                      style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 600 }}
+                      style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 600 }}
                     >✓</button>
                     <button
                       onClick={() => setConfirmDeleteId(null)}
-                      style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
+                      style={{ padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
                     >✕</button>
                   </div>
                 ) : (
                   <button
                     onClick={() => setConfirmDeleteId(guest.id)}
                     style={{
-                      padding: '4px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer',
+                      padding: '8px 8px', minHeight: 40, minWidth: 40, fontSize: 11, borderRadius: 6, cursor: 'pointer',
                       background: 'transparent', color: 'var(--bad)',
                       border: '1px solid var(--line)',
                     }}
@@ -441,8 +440,9 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
             width: '100%', maxWidth: 580,
             background: 'var(--bg-card)', borderRadius: '20px 20px 0 0',
             padding: '24px 24px 32px',
-            maxHeight: '92vh', overflowY: 'auto',
-          }}>
+            maxHeight: '90vh', overflowY: 'auto',
+            '@media (max-width: 480px)': { maxWidth: '100%' }
+          } as React.CSSProperties}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{g.bulkImportTitle}</h2>
               <button onClick={() => setBulkOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--ink-3)', lineHeight: 1 }}>×</button>
@@ -464,7 +464,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
               return (
                 <div style={{ marginTop: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-                    <p style={fieldLabel}>{g.bulkImportPreview}</p>
+                    <p className="font-mono-ui" style={fieldLabel}>{g.bulkImportPreview}</p>
                     <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
                       {g.bulkImportCount(peopleCount)}
                     </p>
@@ -487,7 +487,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
                           onClick={() => toggleCouple(i)}
                           title={entry.isCouple ? g.bulkToggleSingle : g.bulkToggleCouple}
                           style={{
-                            flexShrink: 0, width: 32, height: 28, borderRadius: 6,
+                            flexShrink: 0, width: 44, height: 44, borderRadius: 6,
                             border: `1.5px solid ${entry.isCouple ? 'var(--accent)' : 'var(--line)'}`,
                             background: entry.isCouple ? 'var(--accent)' : 'var(--bg-soft)',
                             cursor: 'pointer', fontSize: 14, lineHeight: 1,
@@ -563,7 +563,8 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
             background: 'var(--bg-card)', borderRadius: '20px 20px 0 0',
             padding: '24px 24px 32px',
             maxHeight: '90vh', overflowY: 'auto',
-          }}>
+            '@media (max-width: 480px)': { maxWidth: '100%' }
+          } as React.CSSProperties}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
                 {editingId ? g.editGuest : g.addGuest}
@@ -574,14 +575,14 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {/* Name */}
               <div style={{ gridColumn: 'span 2' }}>
-                <label style={fieldLabel}>{g.name}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{g.name} <span style={{ color: 'var(--bad)' }}>*</span></label>
                 <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-                  placeholder={g.namePlaceholder} style={inputStyle} />
+                  placeholder={g.namePlaceholder} style={inputStyle} required />
               </div>
 
               {/* Email */}
               <div>
-                <label style={fieldLabel}>{g.email}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{g.email}</label>
                 <input value={draft.email ?? ''} onChange={e => setDraft(d => ({ ...d, email: e.target.value || null }))}
                   placeholder={g.emailPlaceholder} type="email" style={inputStyle} />
               </div>

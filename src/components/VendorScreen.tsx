@@ -320,11 +320,11 @@ export function VendorScreen({ weddingId }: Props) {
                 )}
 
                 {/* Actions */}
-                <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                   <button
                     onClick={() => openEdit(vendor)}
                     style={{
-                      flex: 1, padding: '6px 0', fontSize: 11, fontWeight: 600, borderRadius: 7,
+                      flex: 1, padding: '10px 0', minHeight: 44, fontSize: 11, fontWeight: 600, borderRadius: 7,
                       cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-2)',
                       border: '1px solid var(--line)', transition: 'background 120ms',
                     }}
@@ -334,18 +334,18 @@ export function VendorScreen({ weddingId }: Props) {
                   {confirmDeleteId === vendor.id ? (
                     <>
                       <button onClick={() => handleDelete(vendor.id)}
-                        style={{ padding: '6px 12px', fontSize: 11, fontWeight: 600, borderRadius: 7, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none' }}>
+                        style={{ minWidth: 44, minHeight: 44, padding: '10px 12px', fontSize: 11, fontWeight: 600, borderRadius: 7, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none' }}>
                         ✓
                       </button>
                       <button onClick={() => setConfirmDeleteId(null)}
-                        style={{ padding: '6px 12px', fontSize: 11, borderRadius: 7, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}>
+                        style={{ minWidth: 44, minHeight: 44, padding: '10px 12px', fontSize: 11, borderRadius: 7, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}>
                         ✕
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={() => setConfirmDeleteId(vendor.id)}
-                      style={{ padding: '6px 12px', fontSize: 11, borderRadius: 7, cursor: 'pointer', background: 'transparent', color: 'var(--bad)', border: '1px solid var(--line)' }}
+                      style={{ minWidth: 44, minHeight: 44, padding: '10px 12px', fontSize: 11, borderRadius: 7, cursor: 'pointer', background: 'transparent', color: 'var(--bad)', border: '1px solid var(--line)' }}
                     >×</button>
                   )}
                 </div>
@@ -368,8 +368,9 @@ export function VendorScreen({ weddingId }: Props) {
             width: '100%', maxWidth: 600,
             background: 'var(--bg-card)', borderRadius: '20px 20px 0 0',
             padding: '24px 24px 32px',
-            maxHeight: '92vh', overflowY: 'auto',
-          }}>
+            maxHeight: '90vh', overflowY: 'auto',
+            '@media (max-width: 480px)': { maxWidth: '100%' }
+          } as React.CSSProperties}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>
                 {editingId ? v.editVendor : v.addVendor}
@@ -380,14 +381,14 @@ export function VendorScreen({ weddingId }: Props) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {/* Name */}
               <div style={{ gridColumn: 'span 2' }}>
-                <label style={fieldLabel}>{v.name}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.name} <span style={{ color: 'var(--bad)' }}>*</span></label>
                 <input value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-                  placeholder={v.namePlaceholder} style={inputStyle} />
+                  placeholder={v.namePlaceholder} style={inputStyle} required />
               </div>
 
               {/* Category */}
               <div>
-                <label style={fieldLabel}>{v.category}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.category}</label>
                 <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))} style={inputStyle}>
                   {CATEGORY_KEYS.map(k => (
                     <option key={k} value={k}>{categoryEmoji[k]} {catLabel(k)}</option>
@@ -397,7 +398,7 @@ export function VendorScreen({ weddingId }: Props) {
 
               {/* Link to task (optional) */}
               <div>
-                <label style={fieldLabel}>Link to Task (Optional)</label>
+                <label className="font-mono-ui" style={fieldLabel}>Link to Task (Optional)</label>
                 <select
                   value={draft.task_id ?? ''}
                   onChange={e => setDraft(d => ({ ...d, task_id: e.target.value || null }))}
@@ -417,7 +418,7 @@ export function VendorScreen({ weddingId }: Props) {
 
               {/* Contract status */}
               <div>
-                <label style={fieldLabel}>{v.contractStatus}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.contractStatus}</label>
                 <select
                   value={draft.contract_status}
                   onChange={e => setDraft(d => ({ ...d, contract_status: e.target.value as Vendor['contract_status'] }))}
@@ -431,35 +432,35 @@ export function VendorScreen({ weddingId }: Props) {
 
               {/* Contact name */}
               <div>
-                <label style={fieldLabel}>{v.contactName}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.contactName}</label>
                 <input value={draft.contact_name ?? ''} onChange={e => setDraft(d => ({ ...d, contact_name: e.target.value || null }))}
                   placeholder={v.contactPlaceholder} style={inputStyle} />
               </div>
 
               {/* Email */}
               <div>
-                <label style={fieldLabel}>{v.email}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.email}</label>
                 <input value={draft.email ?? ''} onChange={e => setDraft(d => ({ ...d, email: e.target.value || null }))}
                   placeholder={v.emailPlaceholder} type="email" style={inputStyle} />
               </div>
 
               {/* Phone */}
               <div>
-                <label style={fieldLabel}>{v.phone}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.phone}</label>
                 <input value={draft.phone ?? ''} onChange={e => setDraft(d => ({ ...d, phone: e.target.value || null }))}
                   placeholder={v.phonePlaceholder} style={inputStyle} />
               </div>
 
               {/* Website */}
               <div>
-                <label style={fieldLabel}>{v.website}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.website}</label>
                 <input value={draft.website ?? ''} onChange={e => setDraft(d => ({ ...d, website: e.target.value || null }))}
                   placeholder={v.websitePlaceholder} type="url" style={inputStyle} />
               </div>
 
               {/* Total cost */}
               <div>
-                <label style={fieldLabel}>{v.totalCost}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.totalCost}</label>
                 <input type="number" min={0} value={draft.total_cost ?? ''}
                   onChange={e => setDraft(d => ({ ...d, total_cost: e.target.value ? Number(e.target.value) : null }))}
                   style={inputStyle} />
@@ -467,7 +468,7 @@ export function VendorScreen({ weddingId }: Props) {
 
               {/* Deposit amount */}
               <div>
-                <label style={fieldLabel}>{v.depositAmount}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.depositAmount}</label>
                 <input type="number" min={0} value={draft.deposit_amount ?? ''}
                   onChange={e => setDraft(d => ({ ...d, deposit_amount: e.target.value ? Number(e.target.value) : null }))}
                   style={inputStyle} />
@@ -487,7 +488,7 @@ export function VendorScreen({ weddingId }: Props) {
 
               {/* Notes */}
               <div style={{ gridColumn: 'span 2' }}>
-                <label style={fieldLabel}>{v.notes}</label>
+                <label className="font-mono-ui" style={fieldLabel}>{v.notes}</label>
                 <textarea value={draft.notes ?? ''} onChange={e => setDraft(d => ({ ...d, notes: e.target.value || null }))}
                   placeholder={v.notesPlaceholder} rows={2} style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
