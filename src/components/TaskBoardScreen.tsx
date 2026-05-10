@@ -23,8 +23,9 @@ type SortableData = ReturnType<typeof useSortable>
 type Listeners = SortableData['listeners']
 import { CSS } from '@dnd-kit/utilities'
 import confetti from 'canvas-confetti'
-import type { Wedding, Task, TaskWithSubtasks, TaskStatus } from '../types/database'
+import type { Wedding, Task, TaskWithSubtasks, TaskStatus, Profile } from '../types/database'
 import { useTaskTree, useUpdateTask, useBatchReorderTasks, useAddTask } from '../hooks/useTasks'
+import { useCollaborators } from '../hooks/useCollaborators'
 import { useToast } from '../hooks/useToast'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { StatusBadge } from './ui/StatusBadge'
@@ -109,10 +110,14 @@ function SortableSubtaskRow({
   task,
   parentId,
   filtersActive,
+  collaborators,
+  currentUserId,
 }: {
   task: Task
   parentId: string
   filtersActive: boolean
+  collaborators: Profile[]
+  currentUserId: string | null
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -133,6 +138,11 @@ function SortableSubtaskRow({
   }
 
   const overdue = task.due_date && task.status !== 'done' && new Date(task.due_date) < new Date()
+  const isMyTask = task.assigned_to && task.assigned_to === currentUserId
+  const assignee = task.assigned_to ? collaborators.find(c => c.id === task.assigned_to) : null
+  const assigneeInitials = assignee?.name
+    ? assignee.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    : null
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -143,10 +153,14 @@ function SortableSubtaskRow({
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, borderTop: '1px solid var(--line-soft)' }}
+      style={{
+        ...style,
+        borderTop: '1px solid var(--line-soft)',
+        background: isMyTask ? 'color-mix(in oklch, var(--accent) 6%, transparent)' : 'transparent',
+      }}
       className="flex items-center gap-2 px-3 py-2.5 rounded-lg group cursor-pointer transition-colors"
       onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--bg-soft)')}
-      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}
+      onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = isMyTask ? 'color-mix(in oklch, var(--accent) 6%, transparent)' : 'transparent')}
       onClick={() => openDrawer(task.id)}
     >
       {!filtersActive && <DragHandle listeners={listeners} attributes={attributes} />}
@@ -177,14 +191,31 @@ function SortableSubtaskRow({
         {taskName(task.title)}
       </span>
 
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        <PriorityBadge priority={task.priority} />
-        {task.due_date && (
-          <span className="font-mono-ui" style={{ fontSize: 12, color: overdue ? 'var(--bad)' : 'var(--ink-4)' }}>
-            {overdue ? '⚠ ' : ''}{formatDate(task.due_date)}
-          </span>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Assignee avatar — always visible */}
+        {assigneeInitials && (
+          <div
+            title={assignee?.name ?? ''}
+            style={{
+              width: 24, height: 24, borderRadius: 999, flexShrink: 0,
+              background: isMyTask ? 'var(--accent)' : 'var(--bg-soft)',
+              color: isMyTask ? '#fff' : 'var(--ink-3)',
+              border: `1.5px solid ${isMyTask ? 'var(--accent)' : 'var(--line)'}`,
+              display: 'grid', placeItems: 'center', fontSize: 9, fontWeight: 700,
+            }}
+          >
+            {assigneeInitials}
+          </div>
         )}
-        <svg style={{ color: 'var(--ink-4)' }} className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity sm:flex">
+          <PriorityBadge priority={task.priority} />
+          {task.due_date && (
+            <span className="font-mono-ui" style={{ fontSize: 12, color: overdue ? 'var(--bad)' : 'var(--ink-4)' }}>
+              {overdue ? '⚠ ' : ''}{formatDate(task.due_date)}
+            </span>
+          )}
+        </div>
+        <svg style={{ color: 'var(--ink-4)' }} className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>
@@ -199,11 +230,15 @@ function TaskCard({
   filtersActive,
   filteredSubtasks,
   weddingId,
+  collaborators,
+  currentUserId,
 }: {
   category: TaskWithSubtasks
   filtersActive: boolean
   filteredSubtasks: Task[]
   weddingId: string
+  collaborators: Profile[]
+  currentUserId: string | null
 }) {
   const {
     expandedTaskIds,
@@ -331,6 +366,8 @@ function TaskCard({
                   task={sub}
                   parentId={category.id}
                   filtersActive={filtersActive}
+                  collaborators={collaborators}
+                  currentUserId={currentUserId}
                 />
               ))}
             </SortableContext>
@@ -554,6 +591,11 @@ function FilterBar() {
 
 export function TaskBoardScreen({ wedding }: Props) {
   const { categories, isPending } = useTaskTree(wedding.id)
+  const { data: collaborators = [] } = useCollaborators(wedding.id)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null))
+  }, [])
   const {
     selectedCategoryId,
     setSelectedCategoryId,
@@ -973,6 +1015,8 @@ export function TaskBoardScreen({ wedding }: Props) {
                     filtersActive={filtersActive}
                     filteredSubtasks={filteredSubs}
                     weddingId={wedding.id}
+                    collaborators={collaborators}
+                    currentUserId={currentUserId}
                   />
                 ))}
               </div>

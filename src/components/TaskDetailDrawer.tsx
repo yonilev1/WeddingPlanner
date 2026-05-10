@@ -4,6 +4,7 @@ import type { Task, TaskStatus } from '../types/database'
 import { useUpdateTask, useDeleteTask } from '../hooks/useTasks'
 import { useComments, useAddComment, useActivity, useDeleteComment, useUpdateComment } from '../hooks/useComments'
 import { useCollaborators } from '../hooks/useCollaborators'
+import { useInsertNotifications } from '../hooks/useNotifications'
 import { PriorityBadge } from './ui/PriorityBadge'
 import { useUIStore } from '../store/uiStore'
 import { supabase } from '../lib/supabase'
@@ -122,6 +123,7 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
   const { data: activity } = useActivity(taskId)
   const { data: collaborators = [] } = useCollaborators(weddingId)
   const addComment = useAddComment()
+  const insertNotifications = useInsertNotifications()
 
   useEffect(() => {
     if (task) {
@@ -401,7 +403,18 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
                   <label style={fieldLabel}>{d.assignedTo}</label>
                   <select
                     value={task.assigned_to ?? ''}
-                    onChange={(e) => push({ assigned_to: e.target.value || null })}
+                    onChange={(e) => {
+                      const newAssignee = e.target.value || null
+                      push({ assigned_to: newAssignee })
+                      if (newAssignee && newAssignee !== task.assigned_to) {
+                        insertNotifications.mutate([{
+                          user_id: newAssignee,
+                          wedding_id: weddingId,
+                          task_id: task.id,
+                          message: `You were assigned to "${task.title}"`,
+                        }])
+                      }
+                    }}
                     style={inputStyle}
                   >
                     <option value="">{d.unassigned}</option>
