@@ -375,21 +375,19 @@ function MainApp({ userId, weddingId }: { userId: string; weddingId: string }) {
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
           <Icon d={darkMode ? ICONS.sun : ICONS.moon} size={14} />
         </button>
-        <span className="hidden sm:contents">
-          {profile?.role === 'admin' && (
-            <button onClick={() => setSettingsOpen(true)} title={n.settings} style={iconBtnStyle}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
-              <Icon d={ICONS.settings} size={14} />
-            </button>
-          )}
-          <LanguagePicker />
-          <button onClick={signOut} title={n.signOut} style={iconBtnStyle}
+        {profile?.role === 'admin' && (
+          <button onClick={() => setSettingsOpen(true)} title={n.settings} style={iconBtnStyle}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
-            <Icon d={ICONS.signout} size={14} />
+            <Icon d={ICONS.settings} size={14} />
           </button>
-        </span>
+        )}
+        <LanguagePicker />
+        <button onClick={signOut} title={n.signOut} style={iconBtnStyle}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}>
+          <Icon d={ICONS.signout} size={14} />
+        </button>
       </header>
 
       {/* Content */}
