@@ -2,6 +2,22 @@
 
 ## 0. Recent Session Summary
 
+### Session 4 (2026-05-11)
+**Mobile UX & guest management improvements:**
+1. ✅ **Fixed mobile header buttons** — language picker + sign out now always visible on mobile (removed `hidden sm:contents` wrapper). Previously disappeared below 640px breakpoint.
+2. ✅ **Fixed attending count logic** — `attending` stat now only counts confirmed guests + their confirmed plus-ones (was incorrectly counting all guests with `plus_one: true` regardless of RSVP status). With 3 confirmed and 0 confirmed plus-ones, attending now correctly shows 3 (not 51).
+3. ✅ **Bulk import group field** — added optional "Group" input at top of bulk import modal. All guests imported in a batch automatically get the same group name (e.g., "Groom's Friends"). Resets after each import.
+
+**Architectural/DB notes (Session 4):**
+- Mobile nav icons: removed conditional `<span className="hidden sm:contents">` wrapper so buttons always render
+- Guest stats: changed `const attending = confirmed + plusOnes` → `const confirmedPlusOnes = guests.filter(g => g.rsvp_status === 'confirmed' && g.plus_one).length; const attending = confirmed + confirmedPlusOnes`
+- Bulk import state: added `bulkGroup` state, passed to all imported guests via `group_name: bulkGroup.trim() || null`
+- SMTP configuration: documented Resend as the recommended SMTP provider for unlimited email confirmations (free tier: 3,000/month)
+
+**Known issues identified (Session 4):**
+- Old seed function in live Supabase DB still has hardcoded budget costs — file on disk is clean but migration `002_seed_default_tasks.sql` must be re-run in Supabase SQL Editor to replace the old function. Run `DROP TRIGGER trg_seed_default_tasks ON weddings; CREATE OR REPLACE FUNCTION...` sequence to fix.
+- Supabase auth email confirmation has built-in rate limit on free tier; use custom SMTP (Resend recommended) to remove limits.
+
 ### Session 3 (2026-05-10)
 **Major UI/UX features & analytics:**
 1. ✅ **Task assignment notifications** — when a task is assigned to a collaborator, they receive an instant in-app notification via Supabase Realtime
@@ -374,7 +390,7 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 - Deposit tracking: only counts `deposit_amount` if `deposit_paid = true`
 - Optional: `wedding.budget_total` can be set to track against a grand total (currently unused, acceptable for user-driven budgeting)
 
-## 10. Current State (as of 2026-05-10, end of Session 3)
+## 10. Current State (as of 2026-05-11, end of Session 4)
 
 **All core features implemented and TypeScript-clean (0 errors):**
 
@@ -386,7 +402,7 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 | Task Detail Drawer (status, priority, due date, assignee, budget, comments) | ✅ |
 | Dashboard (hero, countdown, stats, getting-started, urgent tasks, team, activity) | ✅ |
 | Budget panel (user-entered estimates, vendor costs linked to tasks, per-category breakdown) | ✅ |
-| Guest List with RSVP tracking and bulk import | ✅ |
+| Guest List with RSVP tracking and bulk import (+ group field) | ✅ |
 | Vendor Directory with contract/deposit tracking | ✅ |
 | Vendor-to-task linking (vendors linked to category/subtasks for budget integration) | ✅ |
 | Task assignment to team members | ✅ |
@@ -405,6 +421,8 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 | Getting Started checklist | ✅ |
 | Realtime multi-user sync with error guards | ✅ |
 | Mobile responsive (modal sizing, 48px+ touch targets, tablet breakpoint 900px) | ✅ |
+| Mobile header buttons always visible (language + sign out) | ✅ |
+| Attending count (correctly excludes unconfirmed plus-ones) | ✅ |
 | Typography hierarchy (serif numbers, monospace labels, clear visual hierarchy) | ✅ |
 | Form required field markers | ✅ |
 
@@ -417,6 +435,13 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 ## 11. Known Issues / Limitations
 
 **Current (unfixed):**
+- **Old seed function in Supabase DB** — The live `seed_default_tasks()` function in your Supabase project still contains hardcoded budget costs (from before Session 2). The migration file on disk is clean, but must be re-run in the Supabase SQL Editor:
+  ```sql
+  DROP TRIGGER IF EXISTS trg_seed_default_tasks ON public.weddings;
+  -- then paste entire contents of 002_seed_default_tasks.sql
+  ```
+  After this, all new weddings will seed with $0 budget. Existing weddings with mock data must be cleaned manually.
+- **Supabase auth email rate limit** — Built-in email has strict rate limits on free tier. Recommended fix: set up custom SMTP with Resend (free tier: 3,000 emails/month). Configure in Supabase → Auth → Settings → SMTP Settings.
 - **OnboardingTour not translated** — 5 step strings are hardcoded English. Low priority (one-time experience).
 - **Budget total editing** — `WeddingSettingsPanel` doesn't have a field to set `wedding.budget_total`. The budget panel's "remaining" tile relies on this field; without it, remaining = $0.
 - **Guest/Vendor TypeScript cast** — `(supabase as any).from('guests'|'vendors')` used because DB types not regenerated after new tables. Remove casts after running `supabase gen types`.
@@ -449,7 +474,14 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 
 ## 12. TODO / Next Steps
 
-**CRITICAL — Run in Supabase SQL Editor (in order):**
+**CRITICAL — Fix before new users see mock budget data:**
+1. ⚠️ **Re-run seed migration in Supabase SQL Editor:**
+   - Run: `DROP TRIGGER IF EXISTS trg_seed_default_tasks ON public.weddings;`
+   - Then paste entire contents of `supabase/migrations/002_seed_default_tasks.sql`
+   - This replaces the old function with the clean version (no hardcoded costs)
+2. ⚠️ **Set up SMTP for auth emails** — configure Resend in Supabase → Auth → Settings → SMTP Settings to remove rate limits
+
+**CRITICAL — Outstanding migrations (if not yet run):**
 1. ⚠️ `007_guests.sql` — guests table + RLS
 2. ⚠️ `008_vendors.sql` — vendors table + RLS
 3. ⚠️ `009_task_assignment.sql` — assigned_to column
@@ -478,7 +510,14 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 16. **Vendor contract file upload** — attach PDFs to vendor records
 17. **Form data loss warning** — alert when closing a modal with unsaved form changes
 
-**Completed this session (Session 3):**
+**Completed this session (Session 4):**
+- ✅ Fixed mobile header buttons visibility (language picker + sign out always show)
+- ✅ Fixed attending count calculation (only includes confirmed guests + confirmed plus-ones)
+- ✅ Added bulk import group field (optional group name applied to all imported guests at once)
+- ✅ Documented SMTP setup (Resend recommended for unlimited email confirmations)
+- ✅ Identified old seed function issue in live Supabase (migration needs re-run)
+
+**Completed in Session 3:**
 - ✅ Task assignment notifications (realtime, Supabase insert)
 - ✅ Assignee avatar badge on task rows (24px initials circle, accent-tinted when assigned to you)
 - ✅ "My task" highlight (6% accent background tint)

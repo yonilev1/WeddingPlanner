@@ -11,6 +11,7 @@ interface Props {
 }
 
 type RsvpFilter = 'all' | 'confirmed' | 'declined' | 'pending'
+type GuestSort = 'name' | 'group'
 
 const fieldLabel: React.CSSProperties = {
   display: 'block', fontSize: 10, fontWeight: 600, color: 'var(--ink-4)',
@@ -54,6 +55,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
 
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<RsvpFilter>('all')
+  const [sort, setSort] = useState<GuestSort>('name')
   const [formOpen, setFormOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<GuestDraft>(emptyGuest())
@@ -87,6 +89,16 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
       if (!inName && !inEmail && !inGroup) return false
     }
     return true
+  }).sort((a, b) => {
+    if (sort === 'group') {
+      const groupA = a.group_name ?? ''
+      const groupB = b.group_name ?? ''
+      if (groupA !== groupB) {
+        return groupA.localeCompare(groupB)
+      }
+      return a.name.localeCompare(b.name)
+    }
+    return a.name.localeCompare(b.name)
   })
 
   const total = guests.length
@@ -385,7 +397,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
         </div>
       )}
 
-      {/* Filters + search */}
+      {/* Filters + search + sort */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 4, padding: 3, background: 'var(--bg-soft)', borderRadius: 10 }}>
           {FILTERS.map(([val, label]) => (
@@ -410,6 +422,14 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
           placeholder={g.searchPlaceholder}
           style={{ ...inputStyle, flex: 1, minWidth: 160, maxWidth: 280 }}
         />
+        <select
+          value={sort}
+          onChange={e => setSort(e.target.value as GuestSort)}
+          style={{ ...inputStyle, maxWidth: 120 }}
+        >
+          <option value="name">{g.sortByName}</option>
+          <option value="group">{g.sortByGroup}</option>
+        </select>
       </div>
 
       {/* Guest card grid — unified layout for all screen sizes */}
