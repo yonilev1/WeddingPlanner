@@ -56,6 +56,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<RsvpFilter>('all')
   const [sort, setSort] = useState<GuestSort>('name')
+  const [groupFilter, setGroupFilter] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<GuestDraft>(emptyGuest())
@@ -79,8 +80,12 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   }, [guestFormOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
 
+  // Get all unique groups for the dropdown
+  const allGroups = Array.from(new Set(guests.map(g => g.group_name).filter((g): g is string => g !== null && g !== ''))).sort()
+
   const filtered = guests.filter(guest => {
     if (filter !== 'all' && guest.rsvp_status !== filter) return false
+    if (groupFilter && guest.group_name !== groupFilter) return false
     if (search) {
       const q = search.toLowerCase()
       const inName = guest.name.toLowerCase().includes(q)
@@ -397,7 +402,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
         </div>
       )}
 
-      {/* Filters + search + sort */}
+      {/* Filters + search + sort + group filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 4, padding: 3, background: 'var(--bg-soft)', borderRadius: 10 }}>
           {FILTERS.map(([val, label]) => (
@@ -416,6 +421,16 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
             </button>
           ))}
         </div>
+        <select
+          value={groupFilter ?? ''}
+          onChange={e => setGroupFilter(e.target.value || null)}
+          style={{ ...inputStyle, maxWidth: 140 }}
+        >
+          <option value="">{g.filterAllGroups}</option>
+          {allGroups.map(group => (
+            <option key={group} value={group}>{group}</option>
+          ))}
+        </select>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
