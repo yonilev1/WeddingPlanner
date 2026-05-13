@@ -225,6 +225,15 @@
   .dashboard-two-col { grid-template-columns: 1fr; }
 }
 
+/* Guest stat tiles — 4 tiles on mobile, 5 on desktop */
+.guest-stat-tiles {
+  grid-template-columns: repeat(5, 1fr);
+}
+@media (max-width: 640px) {
+  .guest-stat-tiles { grid-template-columns: repeat(4, 1fr); }
+  .guest-stat-desktop { display: none; }
+}
+
 /* ── Guest card grid (design v2 — replaces table everywhere) ─────────────── */
 .guest-card-grid {
   display: grid;

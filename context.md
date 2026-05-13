@@ -2,6 +2,38 @@
 
 ## 0. Recent Session Summary
 
+### Session 5 (2026-05-12)
+**Guest list filtering & sorting enhancements:**
+1. ✅ **Sort by Group** — Added dropdown selector to sort guests by group name (Friends, Family, etc.) or by name (default). When sorting by group, guests are grouped alphabetically by group name, then by name within each group. Guests without a group appear first.
+2. ✅ **Group Filter Dropdown** — Added new dropdown that dynamically lists all unique groups from the guest list. Users can select a specific group to view only guests in that group, or "All Groups" to see everyone.
+3. ✅ **Search within Group** — The existing search box now works in conjunction with the group filter. Users can filter by group first, then search by name/email/group within that filtered set.
+4. ✅ **i18n Support** — Added all translation strings for sort and group filter options in English, French, and Hebrew (RTL).
+
+**Architectural/Code changes (Session 5):**
+- Added `GuestSort` type: `'name' | 'group'` for sort dropdown
+- Added `groupFilter` state (string | null) to track selected group
+- Extracted `allGroups` array from guests: `Array.from(new Set(...)).sort()` to dynamically populate group dropdown
+- Updated filtering logic: `if (groupFilter && guest.group_name !== groupFilter) return false`
+- Updated sort logic: when `sort === 'group'`, primary sort by group name, secondary sort by name; otherwise sort by name only
+- Added group dropdown UI between RSVP filter buttons and search input
+- All filter/sort/search operations compose seamlessly (can combine RSVP filter + group filter + search + sort)
+
+**UI Layout (Session 5):**
+```
+[RSVP Filters: All/Confirmed/Declined/Pending] [Group Dropdown] [Search Box] [Sort Dropdown: Name/Group]
+```
+
+**Translation keys added (en/fr/he):**
+- `filterAllGroups` — "All Groups" / "Tous les groupes" / "כל הקבוצות"
+- `sortByName` — "Name" / "Nom" / "שם"
+- `sortByGroup` — "Group" / "Groupe" / "קבוצה"
+
+**WhatsApp Integration Planning (Session 5):**
+- Discussed WhatsApp invite feature for Israel-based users
+- Recommended MessageBird as provider (simpler than Vonage, free trial with $10 credit)
+- Identified required steps: phone field migration, Edge Function for sending WhatsApp, public RSVP endpoint, UI button, bulk send capability
+- Feature not yet implemented; awaiting user MessageBird account setup
+
 ### Session 4 (2026-05-11)
 **Mobile UX & guest management improvements:**
 1. ✅ **Fixed mobile header buttons** — language picker + sign out now always visible on mobile (removed `hidden sm:contents` wrapper). Previously disappeared below 640px breakpoint.
@@ -390,7 +422,7 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 - Deposit tracking: only counts `deposit_amount` if `deposit_paid = true`
 - Optional: `wedding.budget_total` can be set to track against a grand total (currently unused, acceptable for user-driven budgeting)
 
-## 10. Current State (as of 2026-05-11, end of Session 4)
+## 10. Current State (as of 2026-05-12, end of Session 5)
 
 **All core features implemented and TypeScript-clean (0 errors):**
 
@@ -403,6 +435,9 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 | Dashboard (hero, countdown, stats, getting-started, urgent tasks, team, activity) | ✅ |
 | Budget panel (user-entered estimates, vendor costs linked to tasks, per-category breakdown) | ✅ |
 | Guest List with RSVP tracking and bulk import (+ group field) | ✅ |
+| **Guest list sort by name/group** | ✅ |
+| **Guest list filter by group dropdown** | ✅ |
+| **Guest list search within filtered group** | ✅ |
 | Vendor Directory with contract/deposit tracking | ✅ |
 | Vendor-to-task linking (vendors linked to category/subtasks for budget integration) | ✅ |
 | Task assignment to team members | ✅ |
@@ -489,7 +524,7 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 
 **High priority (UX gaps identified in audit):**
 1. **Multi-wedding support** — enable users to be collaborators on 2+ weddings; show wedding picker after login if user belongs to multiple weddings (currently: single `wedding_id` on profiles, joining new wedding overwrites old)
-2. **SMS/WhatsApp guest invitations** — add phone field to guests table + Twilio/WhatsApp API + RSVP link endpoint (user can text/WhatsApp guests a link to confirm attendance without app login)
+2. **WhatsApp guest invitations** — add phone field to guests table + MessageBird WhatsApp API + public RSVP link endpoint (user can send WhatsApp guests a link to confirm attendance without app login). Setup guide: MessageBird account → WhatsApp channel verification → Supabase Edge Function to send messages → public RSVP confirmation endpoint. Feature planned, awaiting user MessageBird account setup.
 3. **Vendor linking visual indicator** — show small badge/icon on vendor cards when linked to a task
 4. **Plus-one relationship clarity** — improve visual distinction between main guest and plus-one (currently just small text)
 5. **Translate OnboardingTour** — add `en`/`fr`/`he` strings to `translations.ts`
@@ -510,7 +545,14 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 16. **Vendor contract file upload** — attach PDFs to vendor records
 17. **Form data loss warning** — alert when closing a modal with unsaved form changes
 
-**Completed this session (Session 4):**
+**Completed this session (Session 5):**
+- ✅ Added sort by name/group dropdown to guest list (dynamically sorts by group name or name)
+- ✅ Added group filter dropdown to guest list (dynamically populated with all unique groups from guests)
+- ✅ Implemented search within filtered group (all filter/sort/search operations compose seamlessly)
+- ✅ Added i18n support for all new guest list features (en/fr/he)
+- ✅ Analyzed WhatsApp integration options for Israel; recommended MessageBird provider
+
+**Completed in previous session (Session 4):**
 - ✅ Fixed mobile header buttons visibility (language picker + sign out always show)
 - ✅ Fixed attending count calculation (only includes confirmed guests + confirmed plus-ones)
 - ✅ Added bulk import group field (optional group name applied to all imported guests at once)
@@ -575,6 +617,41 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 - `logActivity()` in `useTasks.ts` — called in `useUpdateTask.onSuccess`
 - Tracked fields: status, priority, title, description, due_date
 - `_prevTask` passed to mutation, destructured before DB spread, diffed in `onSuccess`
+
+### Guest List Filtering & Sorting (Session 5 Implementation)
+
+**State management (GuestListScreen):**
+```typescript
+const [filter, setFilter] = useState<RsvpFilter>('all')       // RSVP status filter
+const [groupFilter, setGroupFilter] = useState<string | null>(null)  // Group filter
+const [sort, setSort] = useState<GuestSort>('name')          // Sort order
+const [search, setSearch] = useState('')                      // Text search
+```
+
+**Dynamic group list:**
+```typescript
+const allGroups = Array.from(new Set(
+  guests.map(g => g.group_name).filter((g): g is string => g !== null && g !== '')
+)).sort()
+```
+
+**Composable filtering pipeline:**
+1. RSVP filter: `if (filter !== 'all' && guest.rsvp_status !== filter) return false`
+2. Group filter: `if (groupFilter && guest.group_name !== groupFilter) return false`
+3. Text search: matches name, email, or group_name (case-insensitive substring match)
+4. Sorting: primary by group name (if `sort === 'group'`), secondary by name in all cases
+
+**UI Layout (GuestListScreen):**
+```
+[RSVP Filter Buttons: All/Confirmed/Declined/Pending] [Group Dropdown] [Search Input] [Sort Dropdown: Name/Group]
+```
+
+**Key design decisions:**
+- Group dropdown only shows groups that exist in the guest list (no hardcoded groups)
+- Selecting a group filters to that group only; selecting "All Groups" clears the filter
+- Search works across all fields (name, email, group), not just the filtered group
+- Sort applies after filter, so users can group by category then sort alphabetically within
+- No default group selected; "All Groups" is the starting state
 
 ### RTL/LTR sidebar — critical CSS note
 Use `max-md:ltr:` / `max-md:rtl:` prefixes for directional transforms on the sidebar. Plain `ltr:`/`rtl:` adds an attribute selector that beats breakpoint-only classes (specificity `[0,1,1]` vs `[0,0,1]`), causing the sidebar to stay hidden on desktop.

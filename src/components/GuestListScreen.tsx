@@ -299,32 +299,71 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   return (
     <div className="dashboard-page" style={{ maxWidth: 1080 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{g.title}</h1>
-          <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>{g.subtitle}</p>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, gap: 8 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>{g.title}</h1>
+            <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>{g.subtitle}</p>
+          </div>
+          {/* Primary action — always visible */}
+          <button
+            onClick={openAdd}
+            style={{
+              padding: '9px 16px', background: 'var(--accent)', color: 'white',
+              border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            + {g.addGuest}
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Secondary actions row */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            onClick={() => { setBulkText(''); setBulkGroup(''); setBulkEntries([]); setBulkOpen(true) }}
+            style={{
+              padding: '7px 14px', background: 'var(--bg-card)', color: 'var(--ink-2)',
+              border: '1px solid var(--line)', borderRadius: 9, fontSize: 12, fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            ↑ {g.importList}
+          </button>
+          {guests.length > 0 && (
+            <button
+              onClick={printGuestList}
+              style={{
+                padding: '7px 14px', background: 'var(--bg-card)', color: 'var(--ink-2)',
+                border: '1px solid var(--line)', borderRadius: 9, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              <svg width={13} height={13} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              PDF
+            </button>
+          )}
           {isAdmin && guests.length > 0 && (
             confirmDeleteAll ? (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '6px 12px', borderRadius: 10, background: 'var(--bad-soft, #fee2e2)', border: '1px solid var(--bad)' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--bad)' }}>{g.deleteAllConfirm}</span>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', padding: '5px 10px', borderRadius: 9, background: 'var(--bad-soft, #fee2e2)', border: '1px solid var(--bad)' }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--bad)' }}>{g.deleteAllConfirm}</span>
                 <button
                   onClick={handleDeleteAll}
                   disabled={deleteAllGuests.isPending}
-                  style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 700 }}
+                  style={{ padding: '3px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bad)', color: '#fff', border: 'none', fontWeight: 700 }}
                 >✓</button>
                 <button
                   onClick={() => setConfirmDeleteAll(false)}
-                  style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
+                  style={{ padding: '3px 6px', fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--bg-soft)', color: 'var(--ink-3)', border: '1px solid var(--line)' }}
                 >✕</button>
               </div>
             ) : (
               <button
                 onClick={() => setConfirmDeleteAll(true)}
                 style={{
-                  padding: '9px 14px', background: 'transparent', color: 'var(--bad)',
-                  border: '1px solid var(--bad)', borderRadius: 10, fontSize: 12, fontWeight: 600,
+                  padding: '7px 14px', background: 'transparent', color: 'var(--bad)',
+                  border: '1px solid var(--bad)', borderRadius: 9, fontSize: 12, fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -332,56 +371,21 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
               </button>
             )
           )}
-          {guests.length > 0 && (
-            <button
-              onClick={printGuestList}
-              style={{
-                padding: '9px 14px', background: 'var(--bg-card)', color: 'var(--ink-2)',
-                border: '1px solid var(--line)', borderRadius: 10, fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
-              <svg width={14} height={14} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              </svg>
-              PDF
-            </button>
-          )}
-          <button
-            onClick={() => { setBulkText(''); setBulkGroup(''); setBulkEntries([]); setBulkOpen(true) }}
-            style={{
-              padding: '9px 18px', background: 'var(--bg-card)', color: 'var(--ink-2)',
-              border: '1px solid var(--line)', borderRadius: 10, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            ↑ {g.importList}
-          </button>
-          <button
-            onClick={openAdd}
-            style={{
-              padding: '9px 18px', background: 'var(--accent)', color: 'white',
-              border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            + {g.addGuest}
-          </button>
         </div>
       </div>
 
-      {/* Stats tiles */}
-      <div className="stat-tiles-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', marginBottom: 20 }}>
+      {/* Stats tiles — 4 on mobile (drop plusOnes), 5 on desktop */}
+      <div className="stat-tiles-grid guest-stat-tiles" style={{ marginBottom: 16 }}>
         {[
           { label: g.total, value: total },
           { label: g.attending, value: attending },
           { label: g.notAttending, value: declined },
           { label: g.awaitingReply, value: pending },
-          { label: g.plusOnes, value: plusOnes },
-        ].map(({ label, value }) => (
-          <div key={label} style={{ padding: '16px 20px', background: 'var(--bg-card)' }}>
-            <p className="font-display" style={{ fontSize: 32, fontWeight: 400, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
-            <p className="font-mono-ui" style={{ fontSize: 10, fontWeight: 600, color: 'var(--ink-4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+          { label: g.plusOnes, value: plusOnes, mobileHide: true },
+        ].map(({ label, value, mobileHide }) => (
+          <div key={label} className={mobileHide ? 'guest-stat-desktop' : ''} style={{ padding: '12px 16px', background: 'var(--bg-card)' }}>
+            <p className="font-display" style={{ fontSize: 28, fontWeight: 400, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</p>
+            <p className="font-mono-ui" style={{ fontSize: 9, fontWeight: 600, color: 'var(--ink-4)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
           </div>
         ))}
       </div>
@@ -403,14 +407,15 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
       )}
 
       {/* Filters + search + sort + group filter */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        {/* Row 1: RSVP filter pills (full width) */}
         <div style={{ display: 'flex', gap: 4, padding: 3, background: 'var(--bg-soft)', borderRadius: 10 }}>
           {FILTERS.map(([val, label]) => (
             <button
               key={val}
               onClick={() => setFilter(val)}
               style={{
-                padding: '5px 12px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 600,
+                flex: 1, padding: '7px 4px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 600,
                 cursor: 'pointer', transition: 'all 120ms',
                 background: filter === val ? 'var(--bg-card)' : 'transparent',
                 color: filter === val ? 'var(--ink)' : 'var(--ink-3)',
@@ -421,30 +426,33 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
             </button>
           ))}
         </div>
-        <select
-          value={groupFilter ?? ''}
-          onChange={e => setGroupFilter(e.target.value || null)}
-          style={{ ...inputStyle, maxWidth: 140 }}
-        >
-          <option value="">{g.filterAllGroups}</option>
-          {allGroups.map(group => (
-            <option key={group} value={group}>{group}</option>
-          ))}
-        </select>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={g.searchPlaceholder}
-          style={{ ...inputStyle, flex: 1, minWidth: 160, maxWidth: 280 }}
-        />
-        <select
-          value={sort}
-          onChange={e => setSort(e.target.value as GuestSort)}
-          style={{ ...inputStyle, maxWidth: 120 }}
-        >
-          <option value="name">{g.sortByName}</option>
-          <option value="group">{g.sortByGroup}</option>
-        </select>
+        {/* Row 2: search + group + sort in one line */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={g.searchPlaceholder}
+            style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+          />
+          <select
+            value={groupFilter ?? ''}
+            onChange={e => setGroupFilter(e.target.value || null)}
+            style={{ ...inputStyle, width: 'auto', minWidth: 0, flexShrink: 1 }}
+          >
+            <option value="">{g.filterAllGroups}</option>
+            {allGroups.map(group => (
+              <option key={group} value={group}>{group}</option>
+            ))}
+          </select>
+          <select
+            value={sort}
+            onChange={e => setSort(e.target.value as GuestSort)}
+            style={{ ...inputStyle, width: 'auto', minWidth: 0, flexShrink: 1 }}
+          >
+            <option value="name">{g.sortByName}</option>
+            <option value="group">{g.sortByGroup}</option>
+          </select>
+        </div>
       </div>
 
       {/* Guest card grid — unified layout for all screen sizes */}
