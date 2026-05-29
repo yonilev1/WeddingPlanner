@@ -310,12 +310,16 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
       </table>
     </body></html>`
 
-    const win = window.open('', '_blank')
-    if (!win) return
-    win.document.write(html)
-    win.document.close()
-    win.focus()
-    setTimeout(() => { win.print() }, 300)
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const win = window.open(url, '_blank')
+    if (win) {
+      win.onload = () => { setTimeout(() => { win.print() }, 300) }
+    } else {
+      // fallback: open in same tab
+      window.location.href = url
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
   }
 
   const FILTERS: [RsvpFilter, string][] = [
