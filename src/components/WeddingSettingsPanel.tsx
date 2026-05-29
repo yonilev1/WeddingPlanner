@@ -29,13 +29,22 @@ export function WeddingSettingsPanel({ wedding, onClose }: Props) {
     setSaving(true)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('weddings') as any)
+    const wb = supabase.from('weddings') as any
+    let { error } = await wb
       .update({
         name: name.trim(),
         date: date || null,
         budget_total: budgetTotal !== '' ? Number(budgetTotal) : null,
       })
       .eq('id', wedding.id)
+
+    // If budget_total column doesn't exist yet in DB, retry without it
+    if (error && error.message?.includes('budget_total')) {
+      const retry = await wb
+        .update({ name: name.trim(), date: date || null })
+        .eq('id', wedding.id)
+      error = retry.error
+    }
 
     setSaving(false)
 
