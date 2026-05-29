@@ -90,8 +90,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
       const q = search.toLowerCase()
       const inName = guest.name.toLowerCase().includes(q)
       const inEmail = guest.email?.toLowerCase().includes(q) ?? false
-      const inGroup = guest.group_name?.toLowerCase().includes(q) ?? false
-      if (!inName && !inEmail && !inGroup) return false
+      if (!inName && !inEmail) return false
     }
     return true
   }).sort((a, b) => {
@@ -227,10 +226,38 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
     const rsvpLabel = (status: string) =>
       status === 'confirmed' ? 'Confirmed' : status === 'declined' ? 'Declined' : 'Pending'
 
-    const rows = guests
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(guest => `
+    const rsvpOrder: Record<string, number> = { confirmed: 0, pending: 1, declined: 2 }
+
+    // Group guests: named groups alphabetically, then ungrouped at end
+    const groupMap = new Map<string, Guest[]>()
+    const ungrouped: Guest[] = []
+    guests.forEach(guest => {
+      const grp = guest.group_name?.trim()
+      if (grp) {
+        if (!groupMap.has(grp)) groupMap.set(grp, [])
+        groupMap.get(grp)!.push(guest)
+      } else {
+        ungrouped.push(guest)
+      }
+    })
+
+    const sortedGroupNames = Array.from(groupMap.keys()).sort((a, b) => a.localeCompare(b))
+    if (ungrouped.length > 0) sortedGroupNames.push('')
+
+    const sortGuests = (list: Guest[]) =>
+      list.slice().sort((a, b) => {
+        const ro = (rsvpOrder[a.rsvp_status] ?? 1) - (rsvpOrder[b.rsvp_status] ?? 1)
+        if (ro !== 0) return ro
+        return a.name.localeCompare(b.name)
+      })
+
+    const rows = sortedGroupNames.map(grpName => {
+      const grpGuests = sortGuests(grpName === '' ? ungrouped : groupMap.get(grpName)!)
+      const headerRow = `
+        <tr class="group-header">
+          <td colspan="7">${grpName || 'No Group'}</td>
+        </tr>`
+      const guestRows = grpGuests.map(guest => `
         <tr>
           <td>${guest.name}</td>
           <td>${guest.plus_one ? (guest.plus_one_name || '+1') : '—'}</td>
@@ -239,8 +266,9 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
           <td>${guest.table_number != null ? guest.table_number : '—'}</td>
           <td>${guest.dietary ?? '—'}</td>
           <td>${guest.email ?? '—'}</td>
-        </tr>
-      `).join('')
+        </tr>`).join('')
+      return headerRow + guestRows
+    }).join('')
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
       <title>Guest List</title>
@@ -257,6 +285,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
         th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #666; padding: 8px 10px; border-bottom: 2px solid #e5e5e5; }
         td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
         tr:nth-child(even) td { background: #fafafa; }
+        tr.group-header td { background: #f0f0ee; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #555; padding: 10px 10px 6px; border-bottom: 2px solid #ddd; border-top: 8px solid #fff; }
         .rsvp { font-weight: 600; font-size: 11px; }
         .rsvp-confirmed { color: #16a34a; }
         .rsvp-declined { color: #dc2626; }
