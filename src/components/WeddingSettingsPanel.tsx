@@ -58,9 +58,11 @@ function VenueAutocomplete({
           `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=5&addressdetails=1&accept-language=he`,
           { headers: { 'Accept-Language': 'he' } }
         )
-        const data: PlaceResult[] = await res.json()
-        setResults(data)
-        setOpen(data.length > 0)
+        if (!res.ok) { setResults([]); setOpen(false); return }
+        const data: unknown = await res.json()
+        const places = Array.isArray(data) ? (data as PlaceResult[]) : []
+        setResults(places)
+        setOpen(places.length > 0)
       } catch {
         setResults([])
       } finally {
@@ -171,13 +173,16 @@ export function WeddingSettingsPanel({ wedding, onClose }: Props) {
     if (!name.trim()) return
     setSaving(true)
 
+    const parsedBudget = budgetTotal !== '' ? Number(budgetTotal) : null
+    const safeBudget = parsedBudget != null && Number.isFinite(parsedBudget) && parsedBudget >= 0 ? parsedBudget : null
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wb = supabase.from('weddings') as any
     let { error } = await wb
       .update({
         name: name.trim(),
         date: date || null,
-        budget_total: budgetTotal !== '' ? Number(budgetTotal) : null,
+        budget_total: safeBudget,
         venue_address: venueAddress.trim() || null,
       })
       .eq('id', wedding.id)

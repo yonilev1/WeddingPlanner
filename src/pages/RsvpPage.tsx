@@ -9,6 +9,7 @@ interface RsvpGuest {
   rsvp_status: 'pending' | 'confirmed' | 'declined'
   plus_one: boolean
   plus_one_name: string | null
+  plus_one_attending: boolean
   dietary: string | null
   notes: string | null
   table_number: number | null
@@ -52,6 +53,9 @@ const HE = {
   plusOneLabel: (name: string | null) => name ? `ובן/בת זוג — ${name}` : 'ובן/בת זוג',
   weddingDate: 'תאריך החתונה',
   invitationImage: 'ההזמנה שלנו',
+  attendingCountLabel: 'כמה מגיעים?',
+  attendingJustMe: 'רק אני',
+  attendingMePlusOne: (name: string | null) => name ? `אני ו${name}` : 'אני ועוד אחד/ת',
 }
 
 const EN = {
@@ -81,6 +85,9 @@ const EN = {
   plusOneLabel: (name: string | null) => name ? `& ${name}` : '& guest',
   weddingDate: 'Wedding date',
   invitationImage: 'Our invitation',
+  attendingCountLabel: 'How many are coming?',
+  attendingJustMe: 'Just me',
+  attendingMePlusOne: (name: string | null) => name ? `Me & ${name}` : 'Me & guest',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -137,6 +144,7 @@ export function RsvpPage({ token }: { token: string }) {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [status, setStatus] = useState<'pending' | 'confirmed' | 'declined'>('pending')
+  const [plusOneAttending, setPlusOneAttending] = useState(true)
   const [dietary, setDietary] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
@@ -157,7 +165,7 @@ export function RsvpPage({ token }: { token: string }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: guestData, error: guestErr } = await (supabase as any)
         .from('guests')
-        .select('id, name, rsvp_status, plus_one, plus_one_name, dietary, notes, table_number, wedding_id, language')
+        .select('id, name, rsvp_status, plus_one, plus_one_name, plus_one_attending, dietary, notes, table_number, wedding_id, language')
         .eq('rsvp_token', token)
         .single()
 
@@ -165,6 +173,7 @@ export function RsvpPage({ token }: { token: string }) {
 
       setGuest(guestData as RsvpGuest)
       setStatus(guestData.rsvp_status)
+      setPlusOneAttending(guestData.plus_one_attending ?? true)
       setDietary(guestData.dietary ?? '')
       setNotes(guestData.notes ?? '')
       if (guestData.rsvp_status !== 'pending') setSaved(true)
@@ -188,11 +197,16 @@ export function RsvpPage({ token }: { token: string }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateErr } = await (supabase as any)
       .from('guests')
-      .update({ rsvp_status: status, dietary: dietary.trim() || null, notes: notes.trim() || null })
+      .update({
+        rsvp_status: status,
+        plus_one_attending: guest.plus_one ? plusOneAttending : true,
+        dietary: dietary.trim() || null,
+        notes: notes.trim() || null,
+      })
       .eq('rsvp_token', token)
     setSaving(false)
     if (updateErr) { setError(true); return }
-    setGuest(g => g ? { ...g, rsvp_status: status, dietary: dietary.trim() || null, notes: notes.trim() || null } : g)
+    setGuest(g => g ? { ...g, rsvp_status: status, plus_one_attending: plusOneAttending, dietary: dietary.trim() || null, notes: notes.trim() || null } : g)
     setSaved(true); setEditing(false)
   }
 
@@ -528,6 +542,48 @@ export function RsvpPage({ token }: { token: string }) {
                   )
                 })}
               </div>
+
+              {/* How many are coming (only if a plus-one was invited and they're attending) */}
+              {guest.plus_one && status === 'confirmed' && (
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{
+                    display: 'block', fontSize: 10, letterSpacing: '0.18em',
+                    textTransform: 'uppercase', color: gold, fontFamily: fontSans,
+                    fontWeight: 600, marginBottom: 8, textAlign: 'center',
+                  }}>
+                    {tr.attendingCountLabel}
+                  </label>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    {([
+                      { value: false, label: tr.attendingJustMe },
+                      { value: true, label: tr.attendingMePlusOne(guest.plus_one_name) },
+                    ]).map(({ value, label }) => {
+                      const active = plusOneAttending === value
+                      return (
+                        <button
+                          key={String(value)}
+                          onClick={() => setPlusOneAttending(value)}
+                          style={{
+                            flex: 1, padding: '11px 14px',
+                            border: `1px solid ${active ? gold : gold + '44'}`,
+                            borderRadius: 2, cursor: 'pointer',
+                            background: active
+                              ? `linear-gradient(135deg, ${gold}22, ${gold}11)`
+                              : 'transparent',
+                            color: active ? inkDark : inkMid,
+                            fontSize: 13, fontFamily: fontSans,
+                            fontWeight: active ? 600 : 400,
+                            transition: 'all 160ms',
+                            textAlign: 'center',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Dietary */}
               <div style={{ marginBottom: 14 }}>

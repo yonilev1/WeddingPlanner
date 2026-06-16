@@ -33,6 +33,7 @@ const emptyGuest = (): TablesInsert<'guests'> & { id?: string; created_at?: stri
   dietary: null,
   plus_one: false,
   plus_one_name: null,
+  plus_one_attending: true,
   table_number: null,
   group_name: null,
   notes: null,
@@ -112,7 +113,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const declined = guests.filter(g => g.rsvp_status === 'declined').length
   const pending = guests.filter(g => g.rsvp_status === 'pending').length
   const plusOnes = guests.filter(g => g.plus_one).length
-  const confirmedPlusOnes = guests.filter(g => g.rsvp_status === 'confirmed' && g.plus_one).length
+  const confirmedPlusOnes = guests.filter(g => g.rsvp_status === 'confirmed' && g.plus_one && g.plus_one_attending).length
   const attending = confirmed + confirmedPlusOnes
 
   function openAdd() {
@@ -235,6 +236,9 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   }
 
   function printGuestList() {
+    const esc = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
     const rsvpLabel = (status: string) =>
       status === 'confirmed' ? 'Confirmed' : status === 'declined' ? 'Declined' : 'Pending'
 
@@ -267,17 +271,17 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
       const grpGuests = sortGuests(grpName === '' ? ungrouped : groupMap.get(grpName)!)
       const headerRow = `
         <tr class="group-header">
-          <td colspan="7">${grpName || 'No Group'}</td>
+          <td colspan="7">${esc(grpName || 'No Group')}</td>
         </tr>`
       const guestRows = grpGuests.map(guest => `
         <tr>
-          <td>${guest.name}</td>
-          <td>${guest.plus_one ? (guest.plus_one_name || '+1') : '—'}</td>
+          <td>${esc(guest.name)}</td>
+          <td>${guest.plus_one ? esc(guest.plus_one_name || '+1') : '—'}</td>
           <td class="rsvp rsvp-${guest.rsvp_status}">${rsvpLabel(guest.rsvp_status)}</td>
-          <td>${guest.group_name ?? '—'}</td>
+          <td>${guest.group_name ? esc(guest.group_name) : '—'}</td>
           <td>${guest.table_number != null ? guest.table_number : '—'}</td>
-          <td>${guest.dietary ?? '—'}</td>
-          <td>${guest.email ?? '—'}</td>
+          <td>${guest.dietary ? esc(guest.dietary) : '—'}</td>
+          <td>${guest.email ? esc(guest.email) : '—'}</td>
         </tr>`).join('')
       return headerRow + guestRows
     }).join('')
@@ -550,7 +554,12 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
                     <span style={{ fontSize: 11, color: 'var(--ink-3)', background: 'var(--bg-soft)', padding: '2px 7px', borderRadius: 999 }}>{guest.dietary}</span>
                   )}
                   {guest.plus_one && (
-                    <span style={{ fontSize: 11, color: 'var(--ok-ink, var(--ok))', background: 'var(--ok-soft)', padding: '2px 7px', borderRadius: 999, fontWeight: 600 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 999,
+                      color: guest.rsvp_status === 'confirmed' && !guest.plus_one_attending ? 'var(--ink-4)' : 'var(--ok-ink, var(--ok))',
+                      background: guest.rsvp_status === 'confirmed' && !guest.plus_one_attending ? 'var(--bg-soft)' : 'var(--ok-soft)',
+                      textDecoration: guest.rsvp_status === 'confirmed' && !guest.plus_one_attending ? 'line-through' : 'none',
+                    }}>
                       +1{guest.plus_one_name ? ` ${guest.plus_one_name}` : ''}
                     </span>
                   )}

@@ -192,6 +192,7 @@ export interface Database {
           dietary: string | null
           plus_one: boolean
           plus_one_name: string | null
+          plus_one_attending: boolean
           table_number: number | null
           group_name: string | null
           notes: string | null
@@ -208,6 +209,7 @@ export interface Database {
           dietary?: string | null
           plus_one?: boolean
           plus_one_name?: string | null
+          plus_one_attending?: boolean
           table_number?: number | null
           group_name?: string | null
           notes?: string | null
@@ -224,6 +226,7 @@ export interface Database {
           dietary?: string | null
           plus_one?: boolean
           plus_one_name?: string | null
+          plus_one_attending?: boolean
           table_number?: number | null
           group_name?: string | null
           notes?: string | null
