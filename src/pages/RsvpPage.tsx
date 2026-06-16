@@ -194,19 +194,21 @@ export function RsvpPage({ token }: { token: string }) {
   async function handleSave() {
     if (!guest) return
     setSaving(true); setError(false)
+    const safeDietary = dietary.trim().slice(0, 200) || null
+    const safeNotes = notes.trim().slice(0, 1000) || null
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateErr } = await (supabase as any)
       .from('guests')
       .update({
         rsvp_status: status,
         plus_one_attending: guest.plus_one ? plusOneAttending : true,
-        dietary: dietary.trim() || null,
-        notes: notes.trim() || null,
+        dietary: safeDietary,
+        notes: safeNotes,
       })
       .eq('rsvp_token', token)
     setSaving(false)
     if (updateErr) { setError(true); return }
-    setGuest(g => g ? { ...g, rsvp_status: status, plus_one_attending: plusOneAttending, dietary: dietary.trim() || null, notes: notes.trim() || null } : g)
+    setGuest(g => g ? { ...g, rsvp_status: status, plus_one_attending: plusOneAttending, dietary: safeDietary, notes: safeNotes } : g)
     setSaved(true); setEditing(false)
   }
 
@@ -289,7 +291,14 @@ export function RsvpPage({ token }: { token: string }) {
               parent.style.justifyContent = 'center'
               const placeholder = document.createElement('div')
               placeholder.style.cssText = `text-align:center; padding: 60px 24px`
-              placeholder.innerHTML = `<div style="font-size:48px; opacity:0.4; margin-bottom:16px">💍</div><p style="font-family:${fontSerif}; font-size:22px; color:${inkMid}; letter-spacing:0.15em; font-style:italic">${wedding?.name ?? ''}</p>`
+              const icon = document.createElement('div')
+              icon.style.cssText = `font-size:48px; opacity:0.4; margin-bottom:16px`
+              icon.textContent = '💍'
+              const nameEl = document.createElement('p')
+              nameEl.style.cssText = `font-family:${fontSerif}; font-size:22px; color:${inkMid}; letter-spacing:0.15em; font-style:italic`
+              nameEl.textContent = wedding?.name ?? ''
+              placeholder.appendChild(icon)
+              placeholder.appendChild(nameEl)
               parent.appendChild(placeholder)
             }
           }}
@@ -598,6 +607,7 @@ export function RsvpPage({ token }: { token: string }) {
                   value={dietary}
                   onChange={e => setDietary(e.target.value)}
                   placeholder={tr.dietaryPlaceholder}
+                  maxLength={200}
                   style={inputStyle}
                   onFocus={e => (e.target.style.borderColor = gold)}
                   onBlur={e => (e.target.style.borderColor = gold + '55')}
@@ -618,6 +628,7 @@ export function RsvpPage({ token }: { token: string }) {
                   onChange={e => setNotes(e.target.value)}
                   placeholder={tr.notesPlaceholder}
                   rows={3}
+                  maxLength={1000}
                   style={{ ...inputStyle, resize: 'vertical' }}
                   onFocus={e => (e.target.style.borderColor = gold)}
                   onBlur={e => (e.target.style.borderColor = gold + '55')}

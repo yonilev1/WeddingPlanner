@@ -451,7 +451,10 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
                       type="number" min="0" step="1" placeholder="0"
                       value={localEstimated}
                       onChange={(e) => setLocalEstimated(e.target.value)}
-                      onBlur={() => push({ estimated_cost: localEstimated === '' ? null : Number(localEstimated) })}
+                      onBlur={() => {
+                        const n = Number(localEstimated)
+                        push({ estimated_cost: localEstimated === '' || !Number.isFinite(n) || n < 0 ? null : n })
+                      }}
                       style={inputStyle}
                     />
                   </div>
@@ -461,7 +464,10 @@ export function TaskDetailDrawer({ taskId, tasks, weddingId, isAdmin = false, us
                       type="number" min="0" step="1" placeholder="0"
                       value={localActual}
                       onChange={(e) => setLocalActual(e.target.value)}
-                      onBlur={() => push({ actual_cost: localActual === '' ? null : Number(localActual) })}
+                      onBlur={() => {
+                        const n = Number(localActual)
+                        push({ actual_cost: localActual === '' || !Number.isFinite(n) || n < 0 ? null : n })
+                      }}
                       style={inputStyle}
                     />
                   </div>

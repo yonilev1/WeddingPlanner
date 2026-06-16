@@ -89,6 +89,12 @@ export function VendorScreen({ weddingId }: Props) {
   const fmt = (n: number | null) =>
     n == null ? '—' : '$' + n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
+  const parseMoneyInput = (raw: string): number | null => {
+    if (!raw) return null
+    const n = Number(raw)
+    return Number.isFinite(n) && n >= 0 ? n : null
+  }
+
   const filtered = vendors.filter(vendor => {
     if (catFilter !== 'all' && vendor.category !== catFilter) return false
     if (search) {
@@ -462,7 +468,7 @@ export function VendorScreen({ weddingId }: Props) {
               <div>
                 <label className="font-mono-ui" style={fieldLabel}>{v.totalCost}</label>
                 <input type="number" min={0} value={draft.total_cost ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, total_cost: e.target.value ? Number(e.target.value) : null }))}
+                  onChange={e => setDraft(d => ({ ...d, total_cost: parseMoneyInput(e.target.value) }))}
                   style={inputStyle} />
               </div>
 
@@ -470,7 +476,7 @@ export function VendorScreen({ weddingId }: Props) {
               <div>
                 <label className="font-mono-ui" style={fieldLabel}>{v.depositAmount}</label>
                 <input type="number" min={0} value={draft.deposit_amount ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, deposit_amount: e.target.value ? Number(e.target.value) : null }))}
+                  onChange={e => setDraft(d => ({ ...d, deposit_amount: parseMoneyInput(e.target.value) }))}
                   style={inputStyle} />
               </div>
 
