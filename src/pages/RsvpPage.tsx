@@ -34,8 +34,8 @@ const HE = {
   to: 'לחתונתם של',
   dateLabel: 'תאריך',
   rsvpTitle: 'אישור הגעה',
-  yes: '✓  אגיע בשמחה',
-  no: '✕  לא אוכל להגיע',
+  yes: '✓  מגיע/ה',
+  no: '✕  לא מגיע/ה',
   dietaryLabel: 'העדפות תזונה',
   dietaryPlaceholder: 'למשל: צמחוני, ללא גלוטן...',
   notesLabel: 'הערות',
@@ -54,8 +54,8 @@ const HE = {
   weddingDate: 'תאריך החתונה',
   invitationImage: 'ההזמנה שלנו',
   attendingCountLabel: 'כמה מגיעים?',
-  attendingJustMe: 'רק אני',
-  attendingMePlusOne: (name: string | null) => name ? `אני ו${name}` : 'אני ועוד אחד/ת',
+  attendingJustMe: 'מגיע/ה לבד',
+  attendingMePlusOne: (name: string | null) => name ? `מגיעים, גם ${name}` : 'מגיעים שנינו',
 }
 
 const EN = {
@@ -66,8 +66,8 @@ const EN = {
   to: 'invite you to celebrate the marriage of',
   dateLabel: 'Date',
   rsvpTitle: 'RSVP',
-  yes: '✓  Joyfully accept',
-  no: '✕  Regretfully decline',
+  yes: '✓  Attending',
+  no: '✕  Not attending',
   dietaryLabel: 'Dietary requirements',
   dietaryPlaceholder: 'e.g. Vegetarian, Gluten-free...',
   notesLabel: 'Notes',
@@ -87,7 +87,7 @@ const EN = {
   invitationImage: 'Our invitation',
   attendingCountLabel: 'How many are coming?',
   attendingJustMe: 'Just me',
-  attendingMePlusOne: (name: string | null) => name ? `Me & ${name}` : 'Me & guest',
+  attendingMePlusOne: (name: string | null) => name ? `We're coming, ${name} too` : "We're both coming",
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
