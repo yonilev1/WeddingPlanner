@@ -36,6 +36,7 @@ const emptyGuest = (): Omit<Guest, 'id' | 'created_at'> & { id?: string; created
   table_number: null,
   group_name: null,
   notes: null,
+  language: 'he',
 })
 
 type GuestDraft = ReturnType<typeof emptyGuest>
@@ -62,6 +63,7 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
   const [draft, setDraft] = useState<GuestDraft>(emptyGuest())
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
   const [bulkText, setBulkText] = useState('')
@@ -220,6 +222,16 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
     } finally {
       setBulkSaving(false)
     }
+  }
+
+  function copyRsvpLink(guest: Guest) {
+    const token = (guest as Guest & { rsvp_token?: string }).rsvp_token
+    if (!token) return
+    const url = `${window.location.origin}/rsvp/${token}`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(guest.id)
+      setTimeout(() => setCopiedId(id => id === guest.id ? null : id), 2000)
+    })
   }
 
   function printGuestList() {
@@ -550,6 +562,9 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
                   {guest.group_name && (
                     <span style={{ fontSize: 11, color: 'var(--ink-3)', background: 'var(--bg-soft)', padding: '2px 7px', borderRadius: 999, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{guest.group_name}</span>
                   )}
+                  <span style={{ fontSize: 11, color: 'var(--ink-3)', background: 'var(--bg-soft)', padding: '2px 7px', borderRadius: 999 }}>
+                    {guest.language === 'en' ? g.languageEnglish : g.languageHebrew}
+                  </span>
                 </div>
               </div>
 
@@ -578,6 +593,26 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
                     </button>
                   )
                 })}
+                <button
+                  onClick={() => copyRsvpLink(guest)}
+                  style={{
+                    padding: '9px 10px', border: 'none', cursor: 'pointer',
+                    background: copiedId === guest.id ? 'var(--ok-soft)' : 'transparent',
+                    color: copiedId === guest.id ? 'var(--ok)' : 'var(--ink-4)',
+                    fontSize: 11, fontWeight: 600, transition: 'all 120ms',
+                    display: 'flex', alignItems: 'center', gap: 3,
+                    borderRight: '1px solid var(--line-soft)',
+                  }}
+                  title="Copy RSVP link"
+                >
+                  {copiedId === guest.id ? (
+                    <span style={{ fontSize: 11 }}>✓</span>
+                  ) : (
+                    <svg style={{ width: 13, height: 13 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                  )}
+                </button>
                 <button
                   onClick={() => openEdit(guest)}
                   style={{ padding: '9px 14px', border: 'none', cursor: 'pointer', background: 'transparent', color: 'var(--ink-4)', fontSize: 13, transition: 'color 120ms' }}
@@ -816,6 +851,19 @@ export function GuestListScreen({ weddingId, isAdmin = false }: Props) {
                   onChange={e => setDraft(d => ({ ...d, table_number: e.target.value ? Number(e.target.value) : null }))}
                   style={inputStyle}
                 />
+              </div>
+
+              {/* Invitation language */}
+              <div>
+                <label style={fieldLabel}>{g.language}</label>
+                <select
+                  value={draft.language}
+                  onChange={e => setDraft(d => ({ ...d, language: e.target.value as Guest['language'] }))}
+                  style={inputStyle}
+                >
+                  <option value="he">{g.languageHebrew}</option>
+                  <option value="en">{g.languageEnglish}</option>
+                </select>
               </div>
 
               {/* Plus one */}

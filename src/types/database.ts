@@ -22,6 +22,7 @@ export interface Database {
           date: string | null        // ISO date string (YYYY-MM-DD)
           share_code: string
           budget_total: number | null
+          venue_address: string | null
           created_at: string
         }
         Insert: {
@@ -30,6 +31,7 @@ export interface Database {
           date?: string | null
           share_code?: string        // auto-generated if omitted
           budget_total?: number | null
+          venue_address?: string | null
           created_at?: string
         }
         Update: {
@@ -38,6 +40,7 @@ export interface Database {
           date?: string | null
           share_code?: string
           budget_total?: number | null
+          venue_address?: string | null
           created_at?: string
         }
       }
@@ -192,6 +195,8 @@ export interface Database {
           table_number: number | null
           group_name: string | null
           notes: string | null
+          rsvp_token: string
+          language: 'he' | 'en'
           created_at: string
         }
         Insert: {
@@ -206,6 +211,8 @@ export interface Database {
           table_number?: number | null
           group_name?: string | null
           notes?: string | null
+          rsvp_token?: string
+          language?: 'he' | 'en'
           created_at?: string
         }
         Update: {
@@ -220,6 +227,8 @@ export interface Database {
           table_number?: number | null
           group_name?: string | null
           notes?: string | null
+          rsvp_token?: string
+          language?: 'he' | 'en'
           created_at?: string
         }
       }

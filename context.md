@@ -2,6 +2,33 @@
 
 ## 0. Recent Session Summary
 
+### Session 6 (2026-05-13)
+**Guest list mobile UX overhaul:**
+1. ✅ **Header restructured for mobile** — Split into two rows: top row has title + primary "+ Add Guest" button (always side-by-side, no wrapping); second row has smaller secondary buttons (Import, PDF, Delete All) that wrap if needed. Previously all buttons competed in one row and overflowed on small screens.
+2. ✅ **Stats tiles — 4 on mobile, 5 on desktop** — Added `.guest-stat-tiles` CSS class: desktop shows all 5 tiles (`repeat(5, 1fr)`), mobile (≤640px) shows 4 tiles (`repeat(4, 1fr)`). The 5th tile ("Plus Ones") is hidden on mobile via `.guest-stat-desktop` class. Stat number font-size reduced 32px → 28px and padding tightened to better fit small screens.
+3. ✅ **Filter row — 2 clean rows instead of chaotic wrap** — Restructured into:
+   - Row 1: RSVP pill buttons stretch full width (`flex: 1` per button, always single row)
+   - Row 2: Search input (flex, takes available space) + Group dropdown + Sort dropdown side by side — no more 3-line wrap on mobile.
+
+**Architectural/Code changes (Session 6):**
+- Added `.guest-stat-tiles` CSS class to `index.css`: `grid-template-columns: repeat(5, 1fr)` on desktop, `repeat(4, 1fr)` on mobile
+- Added `.guest-stat-desktop` CSS class: `display: none` on mobile (≤640px) to hide the Plus Ones tile
+- `GuestListScreen.tsx` header split: primary CTA (`+ Add Guest`) inline with title; secondary actions (Import / PDF / Delete All) in separate `flexWrap: wrap` row below
+- RSVP filter pills now use `flex: 1` so they always fill the full row equally
+- Filter row 2: search `flex: 1`, group/sort selects `width: auto` — all fit in one line without overflow
+
+**UI Layout (Session 6):**
+```
+[Title]                              [+ Add Guest]
+[↑ Import List] [PDF] [Delete All]
+
+[Stat] [Stat] [Stat] [Stat]          ← mobile (4 tiles)
+[Stat] [Stat] [Stat] [Stat] [Stat]   ← desktop (5 tiles)
+
+[All | Confirmed | Declined | Pending]  ← full-width pill row
+[Search...          ] [Group ▾] [Sort ▾]  ← second row
+```
+
 ### Session 5 (2026-05-12)
 **Guest list filtering & sorting enhancements:**
 1. ✅ **Sort by Group** — Added dropdown selector to sort guests by group name (Friends, Family, etc.) or by name (default). When sorting by group, guests are grouped alphabetically by group name, then by name within each group. Guests without a group appear first.
@@ -460,6 +487,9 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 | Attending count (correctly excludes unconfirmed plus-ones) | ✅ |
 | Typography hierarchy (serif numbers, monospace labels, clear visual hierarchy) | ✅ |
 | Form required field markers | ✅ |
+| **Guest list header restructured for mobile** (primary CTA always visible) | ✅ |
+| **Guest stat tiles 4-on-mobile / 5-on-desktop** (Plus Ones hidden on small screens) | ✅ |
+| **Guest filter row — 2 clean rows** (RSVP pills full-width + search/group/sort inline) | ✅ |
 
 **Pending migrations (run in Supabase SQL Editor):**
 - `007_guests.sql` ⚠️ (needed for guest persistence)
@@ -497,6 +527,11 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 - ~~Budget panel showing only one category~~ ✅ (BudgetPanel improvements)
 - ~~Cost inputs stale after realtime update~~ ✅
 - ~~Month names always English in HeatmapView~~ ✅
+
+**Previously resolved (Session 6):**
+- ~~Guest list header overflows on mobile~~ ✅ (split into title+CTA row + secondary actions row)
+- ~~5 stat tiles too cramped on mobile~~ ✅ (4 tiles on mobile, 5 on desktop; Plus Ones hidden via CSS class)
+- ~~Filter row wraps into 3 messy lines on mobile~~ ✅ (2 rows: full-width RSVP pills + search/group/sort inline)
 
 **Previously resolved (Session 2):**
 - ~~Seeded budget mock data conflicting with user intent~~ ✅ (removed all seeded cost estimates)
@@ -545,14 +580,19 @@ per_category_actual    = SUM(category_tasks[*].actual_cost)
 16. **Vendor contract file upload** — attach PDFs to vendor records
 17. **Form data loss warning** — alert when closing a modal with unsaved form changes
 
-**Completed this session (Session 5):**
+**Completed this session (Session 6):**
+- ✅ Restructured guest list header for mobile: title + "Add Guest" CTA always side-by-side; secondary buttons (Import/PDF/Delete All) on separate row
+- ✅ Guest stat tiles responsive: 4 tiles on mobile (Plus Ones hidden), 5 on desktop — via `.guest-stat-tiles` and `.guest-stat-desktop` CSS classes
+- ✅ Guest filter row — 2 clean rows: full-width RSVP pill segment + search/group/sort in one line
+
+**Completed in previous session (Session 5):**
 - ✅ Added sort by name/group dropdown to guest list (dynamically sorts by group name or name)
 - ✅ Added group filter dropdown to guest list (dynamically populated with all unique groups from guests)
 - ✅ Implemented search within filtered group (all filter/sort/search operations compose seamlessly)
 - ✅ Added i18n support for all new guest list features (en/fr/he)
 - ✅ Analyzed WhatsApp integration options for Israel; recommended MessageBird provider
 
-**Completed in previous session (Session 4):**
+**Completed in Session 4:**
 - ✅ Fixed mobile header buttons visibility (language picker + sign out always show)
 - ✅ Fixed attending count calculation (only includes confirmed guests + confirmed plus-ones)
 - ✅ Added bulk import group field (optional group name applied to all imported guests at once)
