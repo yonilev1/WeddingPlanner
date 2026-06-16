@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { Guest } from '../types/database'
+import type { Guest, TablesInsert } from '../types/database'
 import { useGuests, useAddGuest, useUpdateGuest, useDeleteGuest, useDeleteAllGuests, useBulkAddGuests } from '../hooks/useGuests'
 import { useTranslation } from '../i18n/useTranslation'
 import { useToast } from '../hooks/useToast'
@@ -25,7 +25,7 @@ const inputStyle: React.CSSProperties = {
 }
 
 
-const emptyGuest = (): Omit<Guest, 'id' | 'created_at'> & { id?: string; created_at?: string } => ({
+const emptyGuest = (): TablesInsert<'guests'> & { id?: string; created_at?: string } => ({
   wedding_id: '',
   name: '',
   email: null,

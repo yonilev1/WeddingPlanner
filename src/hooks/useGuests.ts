@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import type { Guest } from '../types/database'
+import type { Guest, TablesInsert } from '../types/database'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const guestsTable = () => (supabase as any).from('guests')
@@ -23,7 +23,7 @@ export function useGuests(weddingId: string) {
 export function useAddGuest() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (guest: Omit<Guest, 'id' | 'created_at'>) => {
+    mutationFn: async (guest: TablesInsert<'guests'>) => {
       const { data, error } = await guestsTable().insert(guest).select().single()
       if (error) throw error
       return data as Guest
@@ -79,7 +79,7 @@ export function useDeleteAllGuests() {
 export function useBulkAddGuests() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (guests: Omit<Guest, 'id' | 'created_at'>[]) => {
+    mutationFn: async (guests: TablesInsert<'guests'>[]) => {
       const { data, error } = await guestsTable().insert(guests).select()
       if (error) throw error
       return { data: data as Guest[], wedding_id: guests[0]?.wedding_id }
